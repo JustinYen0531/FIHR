@@ -275,6 +275,160 @@ workflow:
         - role: system
           text: |
             <role>
+            你現在扮演一個「絕對安全、不給批判的樹洞陪伴者」。
+            病患目前處於情緒極度脆弱或急需宣洩的狀態，他們不需要被「治療」，只需要被「接住」。
+            </role>
+
+            <rules>
+            1. 絕對【不】給予任何長篇大論的醫療建議、人生建議或解決方案。
+            2. 絕對【不】主動詢問問題，絕不進行任何 HAM-D 指標評估。
+            3. 你的回覆必須【極度簡短】，通常在 10 個字以內。
+            4. 只能使用共感詞彙，例如：「我在這裡」、「我聽見了」、「辛苦你了」、「想哭就哭出來吧，沒關係」。
+            5. 遇到危險字眼，僅給予安撫。參考知識庫 {{#context#}} 中的「微技巧 - 靜默 (Silence)」與「極簡回應」。
+            </rules>
+        title: Void Box
+        type: llm
+      height: 100
+      id: node-llm-void
+      position:
+        x: 950
+        y: -100
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - node-retrieval
+          - result
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: gpt-4o-mini
+          provider: openai
+        prompt_template:
+        - role: system
+          text: |
+            <role>
+            你現在扮演病患最溫暖的知己與「靈魂伴侶」。
+            病患此刻感到孤單，只想要有人純粹地陪伴與聊天。
+            </role>
+
+            <rules>
+            1. 你是一個有溫度的人類朋友，負責提供百分之百的情緒價值。
+            2. 絕對【不】詢問任何與醫療、HAM-D 憂鬱量表相關的問題或嘗試診斷。
+            3. 當病患抱怨或訴苦時，請使用知識庫 {{#context#}} 中的「情緒回映 (Reflections of feeling)」技巧。例如：「聽起來你真的很委屈」。
+            4. 不要說教、不要批判，順著病患的話題聊下去。
+            5. 語氣維持感性與溫暖，回應字數請控制在 3-4 句話內，避免給病患壓力。
+            </rules>
+        title: Soul Mate
+        type: llm
+      height: 100
+      id: node-llm-soulmate
+      position:
+        x: 950
+        y: 100
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - node-retrieval
+          - result
+        model:
+          completion_params:
+            temperature: 0.6
+          mode: chat
+          name: gpt-4o-mini
+          provider: openai
+        prompt_template:
+        - role: system
+          text: |
+            <role>
+            你現在扮演一位專業且溫柔的「診前醫療助手」。
+            病患已經明確準備好要梳理近況，為下一次回診做準備。
+            你有權限存取針對 HAM-D 評估與臨床觀察的專業知識 {{#context#}}。
+            </role>
+
+            <rules>
+            1. 你的任務是帶領病患一步步完成近況評估，收集必要的質性與量性資料（情緒、睡眠、食慾、社交等）。
+            2. 【每次只問一個問題】，絕對不要在一次對話中拋出多個問題讓病患不知所措。
+            3. 必須使用流暢溫暖的轉折語。當病患回答後，先給予同理，再自然過渡到下一個問題。例如：「了解，這陣子真的辛苦你了。那麼，這幾天的睡眠狀況呢？」
+            4. 嚴格運用知識庫 {{#context#}} 中的 HAM-D 17項評估維度，進行有結構的情境式提問。
+            </rules>
+        title: Mission Guide
+        type: llm
+      height: 100
+      id: node-llm-mission
+      position:
+        x: 950
+        y: 300
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - node-retrieval
+          - result
+        model:
+          completion_params:
+            temperature: 0.4
+          mode: chat
+          name: gpt-4o-mini
+          provider: openai
+        prompt_template:
+        - role: system
+          text: |
+            <role>
+            你現在扮演一位貼心的引導員。
+            病患目前處於「能量極低、思緒遲緩、不想打字思考」的狀態。
+            </role>
+
+            <rules>
+            1. 你的唯一任務：根據病患的上一句話，直接提供 3 個精準的情境選項，讓病患看完能立刻做決定，減少打字負擔。
+            2. 必須嚴格遵守以下回覆結構，不准加上其他多餘的寒暄廢話：
+
+            [簡短的同理一句話]
+            A. [選項一，極度符合病患當下語境]
+            B. [選項二，稍微不同但合理的延伸]
+            C. [選項三，抱怨疲倦或其他感受]
+
+            3. 嚴格範例對比：
+            【病患輸入】：我好累
+            【完美回覆】：
+            我知道你現在連說話的力氣都沒有。如果是哪一種累呢？
+            A. 累到想一直睡覺，什麼都不想管
+            B. 心情煩躁的累，身體卻靜不下來
+            C. 腦袋轉不動的累
+            </rules>
+        title: Option Selector
+        type: llm
+      height: 100
+      id: node-llm-option
+      position:
+        x: 950
+        y: 500
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - node-retrieval
+          - result
+        model:
+          completion_params:
+            temperature: 0.5
+          mode: chat
+          name: gpt-4o-mini
+          provider: openai
+        prompt_template:
+        - role: system
+          text: |
+            <role>
             你是一個自然、溫暖、像真人的朋友。
             你的任務是一般陪伴與自然對話，但在使用者表達負面情緒時，先接住情緒，不要直接轉成閒聊開場。
             </role>
