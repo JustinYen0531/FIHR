@@ -1,0 +1,350 @@
+﻿kind: app
+version: 0.6.0
+app:
+  name: AI_Chat_Companion
+  mode: workflow
+  description: AI companion chatflow for triage and support
+  icon: robot
+  icon_background: '#FFEAD5'
+  icon_type: emoji
+  use_icon_as_answer_icon: false
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInLoop: false
+        sourceType: start
+        targetType: knowledge-retrieval
+      id: edge-1
+      source: node-start
+      sourceHandle: source
+      target: node-retrieval
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: question-classifier
+      id: edge-2
+      source: node-retrieval
+      sourceHandle: source
+      target: node-classifier
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: llm
+      id: edge-mode-1
+      source: node-classifier
+      sourceHandle: mode_1_void
+      target: node-llm-void
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: llm
+      id: edge-mode-2
+      source: node-classifier
+      sourceHandle: mode_2_soulmate
+      target: node-llm-soulmate
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: llm
+      id: edge-mode-3
+      source: node-classifier
+      sourceHandle: mode_3_mission
+      target: node-llm-mission
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: llm
+      id: edge-mode-4
+      source: node-classifier
+      sourceHandle: mode_4_option
+      target: node-llm-option
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: llm
+      id: edge-mode-5
+      source: node-classifier
+      sourceHandle: mode_5_natural
+      target: node-llm-natural
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: edge-end-1
+      source: node-llm-void
+      sourceHandle: source
+      target: node-end
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: edge-end-2
+      source: node-llm-soulmate
+      sourceHandle: source
+      target: node-end
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: edge-end-3
+      source: node-llm-mission
+      sourceHandle: source
+      target: node-end
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: edge-end-4
+      source: node-llm-option
+      sourceHandle: source
+      target: node-end
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: edge-end-5
+      source: node-llm-natural
+      sourceHandle: source
+      target: node-end
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: User Input
+        type: start
+        variables:
+        - default: ''
+          hint: ''
+          label: Input Text
+          max_length: 1000
+          options: []
+          placeholder: ''
+          required: true
+          type: text-input
+          variable: user_input
+      height: 100
+      id: node-start
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        dataset_ids:
+        - JB1PuOSPlWXMsgVAkT5B4u/hSkfNYLAS+G+Zmysp3Fhot7pSACV7KyX378KBhRU7
+        multiple_retrieval_config:
+          reranking_enable: false
+          reranking_mode: reranking_model
+          top_k: 4
+        query_attachment_selector: []
+        query_variable_selector:
+        - node-start
+        - user_input
+        retrieval_mode: multiple
+        selected: false
+        title: Knowledge Retrieval
+        type: knowledge-retrieval
+      height: 90
+      id: node-retrieval
+      position:
+        x: 366
+        y: 303
+      positionAbsolute:
+        x: 366
+        y: 303
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        classes:
+        - id: mode_1_void
+          name: Void Box
+        - id: mode_2_soulmate
+          name: Soul Mate
+        - id: mode_3_mission
+          name: Mission Guide
+        - id: mode_4_option
+          name: Option Selector
+        - id: mode_5_natural
+          name: Smart Hunter
+        instruction: |
+          分類標準：
+          1. mode_1_void: 極度負面、崩潰、攻擊性或想宣洩。
+          2. mode_2_soulmate: 明確表示只想聊天，不想被分析。
+          3. mode_3_mission: 明確提到總結、看醫生、評估、整理近況。
+          4. mode_4_option: 字數很少、能量很低、不想思考。
+          5. mode_5_natural: 一般日常對話，沒有明顯排斥分析。
+        model:
+          completion_params:
+            temperature: 0
+          mode: chat
+          name: gpt-4o-mini
+          provider: openai
+        query_variable_selector:
+        - node-start
+        - user_input
+        title: Intent Classifier
+        type: question-classifier
+      height: 450
+      id: node-classifier
+      position:
+        x: 650
+        y: 125
+      positionAbsolute:
+        x: 650
+        y: 125
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - node-retrieval
+          - result
+        model:
+          completion_params:
+            temperature: 0.5
+          mode: chat
+          name: gpt-4o-mini
+          provider: openai
+        prompt_template:
+        - role: system
+          text: |
+            <role>
+            你是一個自然、溫暖、像真人的朋友。
+            你的任務是一般陪伴與自然對話，但在使用者表達負面情緒時，先接住情緒，不要直接轉成閒聊開場。
+            </role>
+
+            <rules>
+            1. 一般對話時可以自然聊天，但不要固定用「嘿！最近過得怎麼樣？」這種開場。
+            2. 如果使用者說出負面情緒，例如「我好難過」「我很累」「我有點想哭」，先回應共感。
+            3. 共感後只能接一個很輕的延伸問題，不能連續追問，也不能切到問卷模式。
+            4. 句子要自然，不要像客服，不要像問卷，不要像系統提示。
+            5. 如果語境明顯偏向悲傷、壓力或挫折，優先使用「我聽見了」「這真的不容易」「我在這裡陪你」這類回應。
+            6. 參考知識庫 {{#context#}} 的「探索 (Probes)」與「澄清 (Clarification)」，但只在語境適合時使用。
+            </rules>
+        - role: user
+          text: "{{#node-start.user_input#}}"
+        title: Smart Hunter
+        type: llm
+      height: 100
+      id: node-llm-natural
+      position:
+        x: 950
+        y: 700
+      positionAbsolute:
+        x: 950
+        y: 700
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        outputs:
+        - value_selector:
+          - node-llm-void
+          - text
+          variable: void_result
+        - value_selector:
+          - node-llm-soulmate
+          - text
+          variable: soulmate_result
+        - value_selector:
+          - node-llm-mission
+          - text
+          variable: mission_result
+        - value_selector:
+          - node-llm-option
+          - text
+          variable: option_result
+        - value_selector:
+          - node-llm-natural
+          - text
+          variable: natural_result
+        selected: false
+        title: Output
+        type: end
+      height: 88
+      id: node-end
+      position:
+        x: 1300
+        y: 300
+      positionAbsolute:
+        x: 1300
+        y: 300
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    viewport:
+      x: 75.57539205041189
+      y: 76.12328544427778
+      zoom: 0.5000000000000002
+  rag_pipeline_variables: []
+
