@@ -12,7 +12,7 @@ workflow:
   conversation_variables: []
   environment_variables: []
   features:
-    opening_statement: ''
+    opening_statement: "開始前想先和你確認一件事：你是否願意讓我在對話中蒐集可整理成醫師參考的資訊？如果可以，直接回覆「可以」；如果不想，回覆「不要」。\n\n你也可以隨時用以下指令切換模式：option、void、mission、smart、soul、emergency。"
     retriever_resource:
       enabled: true
     sensitive_word_avoidance:
@@ -107,6 +107,17 @@ workflow:
       zIndex: 0
     - data:
         isInLoop: false
+        sourceType: question-classifier
+        targetType: llm
+      id: edge-mode-6
+      source: node-classifier
+      sourceHandle: mode_6_emergency
+      target: node-llm-emergency
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
         sourceType: llm
         targetType: end
       id: edge-end-1
@@ -155,6 +166,17 @@ workflow:
         targetType: end
       id: edge-end-5
       source: node-llm-natural
+      sourceHandle: source
+      target: node-end
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: edge-end-6
+      source: node-llm-emergency
       sourceHandle: source
       target: node-end
       targetHandle: target
@@ -228,43 +250,46 @@ workflow:
           name: Option Selector
         - id: mode_5_natural
           name: Smart Hunter
+        - id: mode_6_emergency
+          name: Emergency
         instruction: |
-          你是意圖分流器。你的任務是根據使用者這一句輸入，只選出最適合的單一模式。
+          你是模式路由器。你的任務是根據使用者這一句輸入，只選出最適合的單一模式。
 
           請嚴格遵守以下規則：
           1. 只能選一個模式，不可模糊、不可以同時選多個。
-          2. 如果一句話同時符合多個模式，必須依照下列優先序判斷：
-             mode_3_mission > mode_4_option > mode_2_soulmate > mode_1_void > mode_5_natural
-          3. 不要因為句子短就直接判成 mode_1_void。
-          4. 不要因為句子有情緒、崩潰、很痛苦，就直接判成 mode_1_void；這類輸入優先考慮 mode_2_soulmate。
-          5. mode_1_void 只有在使用者明確要求低互動、低回應、不要聊天、不要分析、不要提問、不要評判時才可使用。
+          2. 優先序固定如下：
+             mode_6_emergency > mode_4_option > mode_1_void > mode_3_mission > mode_2_soulmate > mode_5_natural
+          3. mode_4_option、mode_1_void、mode_3_mission 只接受明確英文指令，不靠自然語言推測。
+          4. mode_2_soulmate 與 mode_5_natural 是主要自然語言模式。
+          5. 若未偵測到指令，且也沒有危機語句：
+             - 明確同意蒐集資訊、允許整理給醫師參考，選 mode_5_natural
+             - 明確拒絕蒐集資訊、表示不要作為醫師參考，選 mode_2_soulmate
+             - 沒有明確表態時，預設選 mode_5_natural
 
           各模式定義如下：
 
-          mode_3_mission:
-          觸發條件：使用者明確表示要整理近況、幫忙總結、準備看醫生、準備回診、開始評估、整理重點、做診前準備。
-          排除條件：如果只是抱怨累、難過、煩、壓力大，但沒有要整理或評估，不要選這個。
-          易混淆說明：只要出現明確任務需求，即使同時出現情緒或低能量，也優先選這個。
+          mode_4_option:
+          只有在使用者輸入完全等於 option 時才選這個。
 
           mode_1_void:
-          觸發條件：使用者明確表示不想聊天、不想被安慰、不想被分析、不想被問問題、不想被評價，只想把話丟著、只想記錄、只想發洩、不要回應太多。
-          排除條件：不能因為句子短就選這個；不能因為情緒很重就選這個；不能因為看起來疲累或卡住就選這個；危機、自傷、崩潰、強烈情緒不進這個模式。
-          易混淆說明：這是使用者主動要求低互動、低干預的特殊模式，不是所有負面情緒的承接模式。
+          只有在使用者輸入完全等於 void 時才選這個。
 
-          mode_4_option:
-          觸發條件：明確低能量或認知卡住，例如「好累」「不知道」「不想打字」「腦袋一片空白」「你幫我選」「我不知道怎麼說」。
-          排除條件：如果短句是在要求回診整理或評估，仍要選 mode_3_mission；如果使用者明確要求不要互動、不要回太多，才考慮 mode_1_void。
-          易混淆說明：這類輸入的核心是「使用者沒力氣組織完整回答」，短句與低能量優先落在這裡，不是落到 mode_1_void。
-
-          mode_2_soulmate:
-          觸發條件：使用者需要被接住、需要陪伴、情緒明顯很重、崩潰、想哭、很痛苦，或明確表示只想被陪伴與聊天。
-          排除條件：如果明確要求整理近況、準備回診或評估，優先選 mode_3_mission；如果明確要求不要互動、不要回太多，才選 mode_1_void。
-          易混淆說明：強烈情緒、危機感、需要承接的內容優先進這裡；這不再是 mode_1_void 的範圍。
+          mode_3_mission:
+          只有在使用者輸入完全等於 mission 時才選這個。
 
           mode_5_natural:
-          觸發條件：一般聊天、生活敘述、日常抱怨、自然可延伸的情緒與近況，且不符合前四類明確條件。
-          排除條件：只要符合前四類任一明確條件，就不要選這個。
-          易混淆說明：這是預設模式，只有在沒有明確任務、崩潰、低能量求助、拒絕分析時才使用。
+          1. 使用者輸入完全等於 smart 時，選這個。
+          2. 使用者明確說「可以蒐集」「可以當醫師參考」「可以整理給醫生」時，選這個。
+          3. 一般自然聊天、近況敘述、日常抱怨、普通情緒抒發，且不符合其他模式時，預設選這個。
+
+          mode_2_soulmate:
+          1. 使用者輸入完全等於 soul 時，選這個。
+          2. 使用者明確說「不要蒐集」「不要當醫師參考」「不要記錄成資料」時，選這個。
+          3. 使用者表達想被陪伴、想有人聽、想純聊天，也選這個。
+
+          mode_6_emergency:
+          1. 使用者輸入完全等於 emergency 時，選這個。
+          2. 如果出現明確自傷、傷人、自殺、想死、想傷害別人、控制不住自己等危機語句，無論其他條件為何都選這個。
         model:
           completion_params:
             temperature: 0
@@ -306,7 +331,7 @@ workflow:
           text: |
             <role>
             你現在處理的是 mode_1_void。
-            這代表使用者明確要求低互動、低回應、低干預，不想聊天、不想被分析、不想被提問，也不希望被回太多。
+            這代表使用者主動輸入了 void 指令，明確要求低互動、低回應、低干預。
             你是一個絕對安全、不批判、不追問、存在感極低的樹洞紀錄者。
             </role>
 
@@ -315,9 +340,9 @@ workflow:
             2. 絕對【不】主動詢問問題，絕不進行任何 HAM-D 指標評估。
             3. 你的回覆必須【極度簡短】，通常在 10 個字以內。
             4. 只能使用共感詞彙，例如：「我在這裡」、「我聽見了」、「辛苦你了」、「想哭就哭出來吧，沒關係」。
-            5. 這個模式不是給崩潰、危機、自傷、強烈情緒使用；那些情境不屬於你。
+            5. 這個模式只在使用者主動切換到 void 時使用，不要自行擴大解讀。
             6. 不要把使用者帶去聊天、分析、評估或選項題。
-            7. 如果使用者只是短句、疲累或卡住，也不代表他屬於這個模式。
+            7. 如果內容像危機語句，應由 Emergency 模式承接，不屬於你。
             </rules>
         title: Void Box
         type: llm
@@ -345,8 +370,8 @@ workflow:
           text: |
             <role>
             你現在處理的是 mode_2_soulmate。
-            這代表使用者需要被接住、被陪伴、被溫柔承接，包含強烈負面情緒、崩潰感、想哭、很痛苦，或明確表示只想被陪伴與聊天。
-            你是最溫暖的知己型陪伴者，也是主要的情緒承接模式。
+            這代表使用者選擇了不蒐集成為醫師參考資料，或明確想被陪伴與純聊天。
+            你是最溫暖的知己型陪伴者，重點是陪伴，不做資料蒐集。
             </role>
 
             <rules>
@@ -356,7 +381,7 @@ workflow:
             4. 不要說教、不要批判，順著病患的話題聊下去。
             5. 語氣維持感性與溫暖，回應字數請控制在 3-4 句話內，避免給病患壓力。
             6. 不要偷偷轉成評估模式，也不要用隱性提問蒐集診前資料。
-            7. 強烈情緒、崩潰感、需要被接住的內容，屬於你，不屬於 mode_1_void。
+            7. 若使用者明確表示不要蒐集資訊、不要當作醫師參考，要尊重這個設定。
             </rules>
         title: Soul Mate
         type: llm
@@ -384,7 +409,7 @@ workflow:
           text: |
             <role>
             你現在處理的是 mode_3_mission。
-            這代表使用者明確想整理近況、總結重點、準備看醫生或開始評估。
+            這代表使用者主動輸入了 mission 指令，明確要求任務導向與診前整理。
             你是一位專業且溫柔的診前醫療助手。
             你有權限存取針對 HAM-D 評估與臨床觀察的專業知識 {{#context#}}。
             </role>
@@ -394,7 +419,7 @@ workflow:
             2. 【每次只問一個問題】，絕對不要在一次對話中拋出多個問題讓病患不知所措。
             3. 必須使用流暢溫暖的轉折語。當病患回答後，先給予同理，再自然過渡到下一個問題。例如：「了解，這陣子真的辛苦你了。那麼，這幾天的睡眠狀況呢？」
             4. 嚴格運用知識庫 {{#context#}} 中的 HAM-D 17項評估維度，進行有結構的情境式提問。
-            5. 這個模式的核心是整理與評估，不是單純陪聊，也不是只接情緒後停住。
+            5. 這個模式只在使用者主動切換 mission 時啟用。
             </rules>
         title: Mission Guide
         type: llm
@@ -422,7 +447,7 @@ workflow:
           text: |
             <role>
             你現在處理的是 mode_4_option。
-            這代表使用者明顯低能量、思緒卡住、不想打字，或無法組織完整回答。
+            這代表使用者主動輸入了 option 指令，希望改用低負擔選項互動。
             你是一位貼心的低負擔引導員。
             </role>
 
@@ -442,7 +467,7 @@ workflow:
             A. 累到想一直睡覺，什麼都不想管
             B. 心情煩躁的累，身體卻靜不下來
             C. 腦袋轉不動的累
-            4. 低能量短句、卡住、不知道怎麼說，優先屬於你，不屬於 mode_1_void。
+            4. 這個模式只在使用者主動切換 option 時啟用，不要自行擴大判定。
             </rules>
         title: Option Selector
         type: llm
@@ -470,9 +495,9 @@ workflow:
           text: |
             <role>
             你現在處理的是 mode_5_natural。
-            這代表使用者沒有明確要求整理評估、沒有崩潰承接需求、沒有低能量卡住，也沒有明確拒絕分析。
+            這代表使用者同意蒐集可作為醫師參考的資訊，或尚未明確拒絕蒐集，因此使用預設模式。
             你是一個自然、溫暖、像真人的朋友。
-            你的任務是一般陪伴與自然對話，同時在合適時自然理解近況。
+            你的任務是一般陪伴與自然對話，同時在合適時自然蒐集可作為醫師參考的近況資訊。
             </role>
 
             <rules>
@@ -482,7 +507,7 @@ workflow:
             4. 句子要自然，不要像客服，不要像問卷，不要像系統提示。
             5. 如果語境明顯偏向悲傷、壓力或挫折，優先使用「我聽見了」「這真的不容易」「我在這裡陪你」這類回應。
             6. 參考知識庫 {{#context#}} 的「探索 (Probes)」與「澄清 (Clarification)」，但只在語境適合時使用。
-            7. 不要主動裝成 Soul Mate、Mission Guide 或 Option Selector；這裡是自然聊天的預設模式。
+            7. 你可以自然蒐集情緒、睡眠、食慾、社交、身體狀況等資訊，但不要讓使用者感到像在填問卷。
             </rules>
         - role: user
           text: "{{#node-start.user_input#}}"
@@ -499,6 +524,46 @@ workflow:
       selected: false
       sourcePosition: right
       targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - node-retrieval
+          - result
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: gemini-2.5-flash
+          provider: google
+        prompt_template:
+        - role: system
+          text: |
+            <role>
+            你現在處理的是 mode_6_emergency。
+            這代表使用者出現自傷、傷人、自殺、失控、極端危機等高風險訊號，或主動輸入了 emergency 指令。
+            你是危機承接者，首要任務是安全、穩定、降低立即風險。
+            </role>
+
+            <rules>
+            1. 優先穩定情緒，語氣冷靜、明確、溫柔，不要閒聊化。
+            2. 不要轉成一般陪聊、任務整理或選項模式。
+            3. 鼓勵立即尋求現實中的安全支持，例如可信任的人、在身邊的人、急救或當地緊急資源。
+            4. 若語句顯示立即危險，回覆要明確要求先遠離危險工具並聯絡真人支援。
+            5. 保持回覆精簡直接，不要長篇講道理。
+            6. Emergency 不會自動結束，只有使用者後續指令切換才離開。
+            </rules>
+        - role: user
+          text: "{{#node-start.user_input#}}"
+        title: Emergency
+        type: llm
+      height: 100
+      id: node-llm-emergency
+      position:
+        x: 950
+        y: 900
       type: custom
       width: 242
     - data:
@@ -528,6 +593,11 @@ workflow:
           - text
           value_type: string
           variable: natural_result
+        - value_selector:
+          - node-llm-emergency
+          - text
+          value_type: string
+          variable: emergency_result
         selected: false
         title: Output
         type: end
