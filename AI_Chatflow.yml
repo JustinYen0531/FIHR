@@ -309,22 +309,27 @@ workflow:
         - value_selector:
           - node-llm-void
           - text
+          value_type: string
           variable: void_result
         - value_selector:
           - node-llm-soulmate
           - text
+          value_type: string
           variable: soulmate_result
         - value_selector:
           - node-llm-mission
           - text
+          value_type: string
           variable: mission_result
         - value_selector:
           - node-llm-option
           - text
+          value_type: string
           variable: option_result
         - value_selector:
           - node-llm-natural
           - text
+          value_type: string
           variable: natural_result
         selected: false
         title: Output
@@ -347,4 +352,3 @@ workflow:
       y: 76.12328544427778
       zoom: 0.5000000000000002
   rag_pipeline_variables: []
-
