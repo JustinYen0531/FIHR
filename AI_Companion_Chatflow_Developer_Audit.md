@@ -23,19 +23,26 @@
 ## 新版重建後的功能倒退清單
 以下是把 flow 換到新版 Dify 匯出骨架後，和原本目標設計相比出現的功能倒退。這一段是目前最重要的自我審核基準。
 
-### 1. 高風險安全分流已倒退
-目前 [AI_Chatflow_Fresh_Export.yml](C:/Users/閻星澄/Desktop/FHIR-main/FHIR-main/AI_Chatflow_Fresh_Export.yml) 沒有：
+### 1. 高風險安全分流已補回第一版
+目前 [AI_Chatflow_Fresh_Export.yml](C:/Users/閻星澄/Desktop/FHIR-main/FHIR-main/AI_Chatflow_Fresh_Export.yml) 已新增：
 - `Risk Detector`
+- `Risk Structurer`
+- `Set Risk State`
+- `Clear Risk State`
 - `Safety Response`
 - `risk_flag`
 - `red_flag_payload`
 
-這代表目前新版骨架雖然可匯入，但已失去原本規劃中的高風險優先處理能力。
+目前已恢復的能力：
+- 危機訊號會先經過高風險分類，而不是直接進一般模式
+- 命中時會留下 `risk_flag`
+- 命中時會留下簡易 JSON 形狀的 `red_flag_payload`
+- 命中時會清空 `pending_question`，避免掉回一般補問流程
 
-風險：
-- 危機訊號會直接進一般模式分類
-- 無法輸出結構化警示標籤
-- 與 PRD 的 `Red Flags` 要求明顯不符
+目前仍未完成：
+- 尚未區分中風險 / 高風險 / 立即危險
+- 尚未做更細的 red flag 類別標準化
+- 尚未做外部通報或醫療端通知
 
 ### 2. 補問狀態機已簡化回單一欄位
 目前新版骨架版只保留：
@@ -109,17 +116,18 @@
 已達成：
 - 新版骨架可匯入
 - 六模式分流可運作
+- 已補回高風險分流第一版
+- `risk_flag` / `red_flag_payload` 已回到 conversation state
 - `pending_question` 基礎補問機制可運作
 - classifier 沒有直接依賴 retrieval context
 
 尚未達成：
-- 高風險安全分流
-- 結構化 red flag 輸出
 - 補問兩輪上限與收斂控制
 - `natural` 從 retrieval 解耦
+- red flag 結構仍偏簡化版
 
 結論：
-目前只能說已到 `P0` 中段，還不能視為 `P0 done`。
+目前可視為 `P0` 前半段已落地，但還不能視為 `P0 done`。
 
 ### P1：資料蒐集能力
 目前狀態：`未開始`
@@ -161,12 +169,13 @@ AI Companion 的定位不是一般聊天機器人，而是：
 ## 目前 Chatflow 已實作的機制
 
 ### 1. 高風險優先分流
-目前流程最前面先經過 `Risk Detector`，不是先做一般意圖分類。
+目前流程最前面會先經過 `Risk Detector`，再決定要進 `Safety Response` 還是一般流程。
 
 目前設計：
-- `start -> risk detector -> safety response / normal flow`
+- `start -> risk detector -> safety response / clear risk state -> follow-up gate`
 - 如果偵測到自傷、自殺、想消失、極端絕望或明確危機訊號，優先走安全分流。
 - 命中時會設定 `risk_flag = true`
+- 命中時會產生 `red_flag_payload`
 - 命中時會清空補問狀態，避免危機訊號還落回一般追問流程。
 
 目前已達成：
@@ -178,6 +187,7 @@ AI Companion 的定位不是一般聊天機器人，而是：
 目前尚未達成：
 - 尚未區分中風險 / 高風險 / 立即危險的嚴重度分級
 - 沒有醫療端通知或外部通報
+- `red_flag_payload` 目前仍是簡化版 JSON 字串
 
 ### 2. 補問狀態機
 目前不是單純「問了就算」，而是有跨回合狀態。

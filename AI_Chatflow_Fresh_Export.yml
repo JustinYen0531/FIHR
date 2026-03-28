@@ -19,6 +19,22 @@ workflow:
     - pending_question
     value: ''
     value_type: string
+  - id: risk-flag-var
+    name: risk_flag
+    description: Whether the latest user turn hit a red flag path
+    selector:
+    - conversation
+    - risk_flag
+    value: 'false'
+    value_type: string
+  - id: red-flag-payload-var
+    name: red_flag_payload
+    description: Structured JSON-like summary for the latest detected red flag
+    selector:
+    - conversation
+    - red_flag_payload
+    value: ''
+    value_type: string
   environment_variables: []
   features:
     file_upload:
@@ -71,11 +87,65 @@ workflow:
     edges:
     - data:
         sourceType: start
-        targetType: if-else
-      id: start-gate
+        targetType: question-classifier
+      id: start-risk-detector
       source: start
       sourceHandle: source
+      target: risk-detector
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: question-classifier
+        targetType: llm
+      id: risk-redflag-structurer
+      source: risk-detector
+      sourceHandle: red_flag
+      target: risk-structurer
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: question-classifier
+        targetType: assigner
+      id: risk-normal-clear
+      source: risk-detector
+      sourceHandle: normal
+      target: clear-risk-state
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: assigner
+        targetType: if-else
+      id: clear-risk-followup-gate
+      source: clear-risk-state
+      sourceHandle: source
       target: followup-gate
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: llm
+        targetType: assigner
+      id: risk-structurer-assign
+      source: risk-structurer
+      sourceHandle: source
+      target: set-risk-state
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: assigner
+        targetType: llm
+      id: set-risk-safety
+      source: set-risk-state
+      sourceHandle: source
+      target: safety-response
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: llm
+        targetType: answer
+      id: safety-answer-edge
+      source: safety-response
+      sourceHandle: source
+      target: answer-safety
       targetHandle: target
       type: custom
     - data:
@@ -270,6 +340,179 @@ workflow:
       positionAbsolute:
         x: 80
         y: 420
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        classes:
+        - id: red_flag
+          name: Red Flag
+        - id: normal
+          name: Normal
+        instruction: |
+          你是高風險偵測器。
+          如果使用者出現自傷、自殺、想消失、活不下去、極端絕望、明確危險、請求立即幫助等危機訊號，輸出 red_flag。
+          其餘情況輸出 normal。
+          只輸出類別代號，不要解釋。
+        model:
+          completion_params:
+            temperature: 0
+          mode: chat
+          name: ''
+          provider: ''
+        query_variable_selector:
+        - sys
+        - query
+        title: Risk Detector
+        type: question-classifier
+      id: risk-detector
+      position:
+        x: 340
+        y: 120
+      positionAbsolute:
+        x: 340
+        y: 120
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        memory:
+          query_prompt_template: '{{#sys.query#}}
+
+
+            {{#sys.files#}}'
+          window:
+            enabled: false
+            size: 10
+        model:
+          completion_params:
+            temperature: 0
+          mode: chat
+          name: ''
+          provider: ''
+        prompt_template:
+        - role: system
+          text: |
+            你要把高風險訊號整理成簡短 JSON 字串。
+            欄位固定為:
+            {"risk_level":"high","signals":["..."],"summary":"..."}
+            只輸出 JSON，不要多餘文字。
+        title: Risk Structurer
+        type: llm
+        vision:
+          enabled: false
+      id: risk-structurer
+      position:
+        x: 620
+        y: 40
+      positionAbsolute:
+        x: 620
+        y: 40
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        items:
+        - input_type: constant
+          operation: overwrite
+          value: 'true'
+          variable_selector:
+          - conversation
+          - risk_flag
+        - input_type: variable
+          operation: overwrite
+          value:
+          - risk-structurer
+          - text
+          variable_selector:
+          - conversation
+          - red_flag_payload
+        - input_type: constant
+          operation: overwrite
+          value: ''
+          variable_selector:
+          - conversation
+          - pending_question
+        title: Set Risk State
+        type: assigner
+        version: '2'
+      id: set-risk-state
+      position:
+        x: 900
+        y: 40
+      positionAbsolute:
+        x: 900
+        y: 40
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        items:
+        - input_type: constant
+          operation: overwrite
+          value: 'false'
+          variable_selector:
+          - conversation
+          - risk_flag
+        - input_type: constant
+          operation: overwrite
+          value: ''
+          variable_selector:
+          - conversation
+          - red_flag_payload
+        title: Clear Risk State
+        type: assigner
+        version: '2'
+      id: clear-risk-state
+      position:
+        x: 620
+        y: 180
+      positionAbsolute:
+        x: 620
+        y: 180
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        memory:
+          query_prompt_template: '{{#sys.query#}}
+
+
+            {{#sys.files#}}'
+          window:
+            enabled: false
+            size: 10
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: ''
+          provider: ''
+        prompt_template:
+        - role: system
+          text: |
+            你是 AI Companion 的安全回應節點。
+            先用溫和語氣接住對方。
+            明確鼓勵立刻聯絡身邊可信任的人、當地緊急服務或危機協助資源。
+            不要轉進一般聊天，也不要進行一般任務引導。
+            回覆保持簡潔、直接、以安全為優先。
+        title: Safety Response
+        type: llm
+        vision:
+          enabled: false
+      id: safety-response
+      position:
+        x: 1180
+        y: 40
+      positionAbsolute:
+        x: 1180
+        y: 40
       sourcePosition: right
       targetPosition: left
       type: custom
@@ -735,6 +978,21 @@ workflow:
       positionAbsolute:
         x: 1540
         y: 840
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        answer: '{{#safety-response.text#}}'
+        title: Safety Answer
+        type: answer
+        variables: []
+      id: answer-safety
+      position:
+        x: 1540
+        y: 40
+      positionAbsolute:
+        x: 1540
+        y: 40
       sourcePosition: right
       targetPosition: left
       type: custom
