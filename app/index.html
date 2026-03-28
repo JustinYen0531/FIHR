@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html class="light" lang="zh-TW">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Rou Rou AI Companion — 肉肉陪伴</title>
+<meta name="description" content="AI 陪伴型診前引導系統，溫暖關懷每一刻">
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PHONE FRAME (for desktop preview)          -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="phone-frame">
+  <div id="app-shell">
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- PAGE 1: ENERGY CHECK-IN / MODE SELECT  -->
+    <!-- ═══════════════════════════════════════ -->
+    <section id="page-mode" class="page active">
+      <header class="top-bar">
+        <div class="top-bar-left">
+          <div class="avatar-ring">
+            <span class="material-symbols-outlined avatar-icon">spa</span>
+          </div>
+          <span class="top-bar-title">Rou Rou</span>
+        </div>
+        <button class="icon-btn" onclick="navigateTo('settings')">
+          <span class="material-symbols-outlined">settings_heart</span>
+        </button>
+      </header>
+
+      <main class="page-content scroll-area">
+        <!-- Energy Check-in -->
+        <div class="energy-badge">ENERGY CHECK-IN</div>
+        <h1 class="hero-title">今天還有體力跟我聊聊嗎？</h1>
+        <p class="hero-subtitle">你的能量狀態會影響我們互動的方式。選一個最契合你當下心情的模式。</p>
+
+        <!-- Current Mode Indicator -->
+        <div class="current-mode-card">
+          <div class="current-mode-left">
+            <div class="current-mode-icon">
+              <span class="material-symbols-outlined">auto_awesome</span>
+            </div>
+            <div>
+              <span class="current-mode-label">目前設定模式</span>
+              <span class="current-mode-name">Soul Mate 靈魂伴侶</span>
+            </div>
+          </div>
+          <div class="pulse-dot"></div>
+        </div>
+
+        <!-- Mode Selection Cards -->
+        <div class="mode-list">
+          <!-- Void Box -->
+          <button class="mode-card" data-mode="void" onclick="selectMode(this)">
+            <div class="mode-card-icon bg-emerald-light">
+              <span class="material-symbols-outlined">circle</span>
+            </div>
+            <div class="mode-card-text">
+              <h3>Void Box 樹洞模式</h3>
+              <p>只聽不說，讓我安靜地承接你所有的情緒與秘密。</p>
+            </div>
+          </button>
+
+          <!-- Soul Mate (Active) -->
+          <button class="mode-card mode-active" data-mode="soulmate" onclick="selectMode(this)">
+            <div class="mode-card-icon bg-white">
+              <span class="material-symbols-outlined filled">favorite</span>
+            </div>
+            <div class="mode-card-text">
+              <h3>Soul Mate 靈魂伴侶</h3>
+              <p>充滿溫度的深度共感，像老朋友般溫暖你的心靈。</p>
+            </div>
+            <div class="active-badge">ACTIVE</div>
+          </button>
+
+          <!-- Mission Guide -->
+          <button class="mode-card" data-mode="mission" onclick="selectMode(this)">
+            <div class="mode-card-icon bg-orange-light">
+              <span class="material-symbols-outlined">explore</span>
+            </div>
+            <div class="mode-card-text">
+              <h3>Mission Guide 任務引導</h3>
+              <p>如果你感到迷茫，我將帶領你完成今日的心理復健練習。</p>
+            </div>
+          </button>
+
+          <!-- 2-col grid -->
+          <div class="mode-grid-2col">
+            <button class="mode-card-small" data-mode="option" onclick="selectMode(this)">
+              <div class="mode-small-icon bg-blue-light">
+                <span class="material-symbols-outlined">account_tree</span>
+              </div>
+              <h3>Option Selector</h3>
+              <p>結構化對話，減少思考負擔</p>
+            </button>
+            <button class="mode-card-small" data-mode="natural" onclick="selectMode(this)">
+              <div class="mode-small-icon bg-purple-light">
+                <span class="material-symbols-outlined">target</span>
+              </div>
+              <h3>Smart Hunter</h3>
+              <p>精準捕捉核心問題，高效解決困擾</p>
+            </button>
+          </div>
+        </div>
+
+        <!-- Start CTA -->
+        <button class="cta-primary" onclick="navigateTo('chat')">開始今天的對話</button>
+        <p class="cta-hint">隨時可以在聊天中切換模式</p>
+      </main>
+    </section>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- PAGE 2: AI CHAT                        -->
+    <!-- ═══════════════════════════════════════ -->
+    <section id="page-chat" class="page">
+      <header class="top-bar">
+        <div class="top-bar-left">
+          <div class="avatar-ring avatar-glow">
+            <span class="material-symbols-outlined avatar-icon">auto_awesome</span>
+          </div>
+          <div class="top-bar-info">
+            <span class="top-bar-title">Rou Rou</span>
+            <div class="status-row">
+              <span class="status-dot"></span>
+              <span class="status-text">陪伴中</span>
+              <span class="status-divider"></span>
+              <span class="status-mode">模式：自然聊天</span>
+            </div>
+          </div>
+        </div>
+        <button class="icon-btn" onclick="navigateTo('settings')">
+          <span class="material-symbols-outlined">settings_heart</span>
+        </button>
+      </header>
+
+      <main class="chat-area scroll-area" id="chat-messages">
+        <!-- Smart Hunter indicator -->
+        <div class="smart-hunter-indicator">
+          <span>智能感測活躍中</span>
+          <span class="material-symbols-outlined filled tiny">analytics</span>
+        </div>
+
+        <!-- Date -->
+        <div class="chat-date"><span>今天, 下午 2:45</span></div>
+
+        <!-- AI messages -->
+        <div class="msg-cluster ai">
+          <div class="bubble ai-bubble">
+            <p>Rou Rou, 今天感覺心裡重重的，還是比較輕鬆一點呢?</p>
+          </div>
+          <div class="bubble ai-bubble light">
+            <p>如果你想聊聊，我就在這裡聽你說喔。🌿</p>
+          </div>
+        </div>
+
+        <!-- User message -->
+        <div class="msg-cluster user">
+          <div class="bubble user-bubble">
+            <p>今天工作有點多，感覺有一點累，不知道該怎麼放鬆。</p>
+          </div>
+        </div>
+
+        <!-- AI typing -->
+        <div class="typing-indicator">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+
+        <!-- Insight card -->
+        <div class="insight-float">
+          <div class="insight-card">
+            <div class="insight-header">
+              <span class="material-symbols-outlined filled" style="color:var(--tertiary)">eco</span>
+              <span>平靜時刻</span>
+            </div>
+            <p class="insight-body">「深呼吸三次，感覺空氣填滿胸膛的樣子。」</p>
+            <button class="insight-link">開啟引導呼吸 <span class="material-symbols-outlined tiny">chevron_right</span></button>
+          </div>
+        </div>
+      </main>
+
+      <!-- Chat input -->
+      <div class="chat-input-section">
+        <div class="quick-replies">
+          <button class="quick-btn">有一點累</button>
+          <button class="quick-btn">想聽故事</button>
+          <button class="quick-btn">不想說話</button>
+        </div>
+        <div class="input-row">
+          <div class="input-box">
+            <span class="material-symbols-outlined input-icon">sentiment_satisfied</span>
+            <input type="text" placeholder="跟 Rou Rou 說說心事..." id="chat-input"/>
+            <button class="mic-btn">
+              <span class="material-symbols-outlined">mic</span>
+            </button>
+          </div>
+          <button class="send-btn" onclick="sendMessage()">
+            <span class="material-symbols-outlined filled">send</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- PAGE 3: REPORTS - Patient Review       -->
+    <!-- ═══════════════════════════════════════ -->
+    <section id="page-reports" class="page">
+      <header class="top-bar">
+        <div class="top-bar-left">
+          <div class="avatar-ring">
+            <span class="material-symbols-outlined avatar-icon">person</span>
+          </div>
+          <span class="top-bar-title">診前報告審閱</span>
+        </div>
+        <button class="icon-btn" onclick="navigateTo('settings')">
+          <span class="material-symbols-outlined">settings_heart</span>
+        </button>
+      </header>
+
+      <main class="page-content scroll-area">
+        <!-- Welcome -->
+        <h2 class="report-greeting">你好，曉明</h2>
+        <p class="report-desc">這是 Rou Rou 為你整理的本週心情概覽，請確認資訊準確後再交由醫師審閱。</p>
+
+        <!-- HAM-D Ring -->
+        <div class="hamd-card">
+          <div class="hamd-header">
+            <div>
+              <span class="hamd-label">AI-ASSISTED ASSESSMENT</span>
+              <h3 class="hamd-title">HAM-D 指數</h3>
+            </div>
+            <button class="info-btn">
+              <span class="material-symbols-outlined">info</span>
+            </button>
+          </div>
+          <div class="hamd-ring-wrap">
+            <svg class="hamd-ring" viewBox="0 0 160 160">
+              <circle cx="80" cy="80" r="70" fill="transparent" stroke="var(--surface-container-high)" stroke-width="12"/>
+              <circle cx="80" cy="80" r="70" fill="transparent" stroke="var(--primary)" stroke-width="12" stroke-dasharray="440" stroke-dashoffset="132" stroke-linecap="round" class="ring-progress"/>
+            </svg>
+            <div class="hamd-score">
+              <span class="score-num">18</span>
+              <span class="score-label">中度情緒低落</span>
+            </div>
+          </div>
+          <div class="hamd-stats">
+            <div class="stat"><span class="stat-label">上週</span><span class="stat-value">22</span></div>
+            <div class="stat-divider"></div>
+            <div class="stat"><span class="stat-label">變動</span><span class="stat-value accent">-18%</span></div>
+          </div>
+        </div>
+
+        <!-- Mood Wave -->
+        <div class="section-header">
+          <h3 class="section-title">情緒波形圖 (7d)</h3>
+          <span class="section-note">趨勢趨向平穩</span>
+        </div>
+        <div class="wave-chart">
+          <div class="wave-bar" style="height:50%"></div>
+          <div class="wave-bar" style="height:65%"></div>
+          <div class="wave-bar" style="height:75%"></div>
+          <div class="wave-bar" style="height:50%"></div>
+          <div class="wave-bar" style="height:80%"></div>
+          <div class="wave-bar" style="height:60%"></div>
+          <div class="wave-bar" style="height:65%"></div>
+        </div>
+
+        <!-- AI Insights -->
+        <h3 class="section-title">AI 關鍵分析</h3>
+        <div class="insight-list">
+          <div class="insight-row">
+            <div class="insight-row-icon bg-tertiary-light"><span class="material-symbols-outlined">bedtime</span></div>
+            <div class="insight-row-text">
+              <strong>睡眠障礙</strong>
+              <span>過去 3 天提及入睡困難</span>
+            </div>
+            <button class="remove-btn"><span class="material-symbols-outlined">do_not_disturb_on</span></button>
+          </div>
+          <div class="insight-row">
+            <div class="insight-row-icon bg-primary-light"><span class="material-symbols-outlined">sentiment_dissatisfied</span></div>
+            <div class="insight-row-text">
+              <strong>負罪感</strong>
+              <span>對話中重複提及 2 次</span>
+            </div>
+            <button class="remove-btn"><span class="material-symbols-outlined">do_not_disturb_on</span></button>
+          </div>
+          <div class="insight-row">
+            <div class="insight-row-icon bg-secondary-light"><span class="material-symbols-outlined">work</span></div>
+            <div class="insight-row-text">
+              <strong>職場壓力</strong>
+              <span>提及週三會議壓力較大</span>
+            </div>
+            <button class="remove-btn"><span class="material-symbols-outlined">do_not_disturb_on</span></button>
+          </div>
+        </div>
+        <p class="privacy-hint">點擊右側圖示可隱藏不願分享的隱私紀錄</p>
+
+        <!-- Doctor Note -->
+        <h3 class="section-title">給醫師的補充筆記</h3>
+        <div class="note-area">
+          <textarea placeholder="還有什麼想告訴醫師的嗎？例如藥物副作用或是特殊的觸發事件..."></textarea>
+          <span class="material-symbols-outlined note-icon">edit_note</span>
+        </div>
+
+        <!-- Authorization -->
+        <div class="auth-section">
+          <div class="auth-notice">
+            <span class="material-symbols-outlined">verified_user</span>
+            <p>我已確認以上報告內容，並授權 Rou Rou 將此摘要加密傳送至主治醫師診間系統，以作為本次診療輔助。</p>
+          </div>
+          <button class="cta-primary">數位授權並送出報告</button>
+          <button class="text-btn">暫存報告，稍後再傳送</button>
+        </div>
+      </main>
+    </section>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- PAGE 4: CLINICAL DASHBOARD (Doctor)    -->
+    <!-- ═══════════════════════════════════════ -->
+    <section id="page-clinical" class="page">
+      <header class="top-bar">
+        <div class="top-bar-left">
+          <div class="avatar-ring clinical-avatar">
+            <span class="material-symbols-outlined avatar-icon">stethoscope</span>
+          </div>
+          <div>
+            <span class="top-bar-title">Rou Rou</span>
+            <span class="top-bar-sub">CLINICAL DASHBOARD</span>
+          </div>
+        </div>
+        <button class="icon-btn" onclick="navigateTo('settings')">
+          <span class="material-symbols-outlined">settings_heart</span>
+        </button>
+      </header>
+
+      <main class="page-content scroll-area">
+        <!-- Clinical Alert -->
+        <div class="clinical-section-header">
+          <h2 class="section-title">Clinical Alert</h2>
+          <span class="loinc-tag">LOINC: 71354-5</span>
+        </div>
+        <div class="alert-card">
+          <div class="alert-icon"><span class="material-symbols-outlined filled">warning</span></div>
+          <div class="alert-text">
+            <strong>Elevated Risk: Social Withdrawal</strong>
+            <p>Patient reports consecutive 48-hour isolation. HAM-D Psychomotor Retardation score suggests immediate review.</p>
+          </div>
+        </div>
+
+        <!-- Patient Note -->
+        <div class="patient-note-header">
+          <span class="material-symbols-outlined">edit_note</span>
+          <h3>Patient's Personal Note</h3>
+        </div>
+        <div class="patient-note-card">
+          <div class="note-decoration"></div>
+          <p class="note-text">「最近總覺得身體很重，不想出門見任何人。連最喜歡的貓，我也覺得照顧起來很累...感覺自己像掉進深海，聽不到外面的聲音。」</p>
+          <span class="note-meta">Captured via Voice Journal • 2023.10.24</span>
+        </div>
+
+        <!-- HAM-D Dimensions -->
+        <h3 class="section-title">HAM-D Dimension Analysis</h3>
+        <div class="dimension-list">
+          <!-- Dim 1 -->
+          <div class="dim-card">
+            <div class="dim-header">
+              <div>
+                <h4>憂鬱情緒 (Depressed Mood)</h4>
+                <span class="dim-score-label">ESTIMATED SCORE: 3/4</span>
+              </div>
+              <div class="dim-badge high">3</div>
+            </div>
+            <div class="evidence-box">
+              <span class="evidence-label">QUALITATIVE EVIDENCE</span>
+              <p>"感覺自己像掉進深海...聽不到外面的聲音。"</p>
+            </div>
+          </div>
+          <!-- Dim 2 -->
+          <div class="dim-card">
+            <div class="dim-header">
+              <div>
+                <h4>有罪感 (Guilt)</h4>
+                <span class="dim-score-label">ESTIMATED SCORE: 1/4</span>
+              </div>
+              <div class="dim-badge low">1</div>
+            </div>
+            <div class="evidence-box muted">
+              <span class="evidence-label">QUALITATIVE EVIDENCE</span>
+              <p>"連最喜歡的貓，我也覺得照顧起來很累..." (Implicit self-reproach)</p>
+            </div>
+          </div>
+          <!-- Dim 3 -->
+          <div class="dim-card">
+            <div class="dim-header">
+              <div>
+                <h4>睡眠障礙 (Insomnia)</h4>
+                <span class="dim-score-label">ESTIMATED SCORE: 2/6</span>
+              </div>
+              <div class="dim-badge amber">2</div>
+            </div>
+            <div class="progress-row">
+              <div class="progress-track"><div class="progress-fill" style="width:33%"></div></div>
+              <span class="progress-note">Early onset reported</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Patient Journey -->
+        <h3 class="section-title">Patient Journey</h3>
+        <div class="timeline">
+          <div class="timeline-item">
+            <div class="timeline-dot red"></div>
+            <div class="timeline-card">
+              <div class="timeline-meta"><span class="event-type critical">CRITICAL EVENT</span><span class="event-time">OCT 24, 14:20</span></div>
+              <h4>Social Withdrawal</h4>
+              <p>System detected 48h lack of social app engagement and zero step counts.</p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot green"></div>
+            <div class="timeline-card">
+              <div class="timeline-meta"><span class="event-type interaction">INTERACTION</span><span class="event-time">OCT 22, 09:15</span></div>
+              <h4>Therapeutic Dialogue</h4>
+              <p>Rou Rou engaged patient in "Deep Sea" visualization exercise. Patient mood slightly improved post-session.</p>
+            </div>
+          </div>
+          <div class="timeline-item faded">
+            <div class="timeline-dot grey"></div>
+            <div class="timeline-card">
+              <div class="timeline-meta"><span class="event-type baseline">BASELINE</span><span class="event-time">OCT 20, 08:00</span></div>
+              <h4>Weekly Summary Generated</h4>
+              <p>Stable mood patterns recorded over the last 5 days.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Actions -->
+        <div class="clinical-actions">
+          <button class="btn-secondary">Generate Referral</button>
+          <button class="cta-primary with-icon">
+            <span class="material-symbols-outlined">clinical_notes</span>
+            Add Clinical Note
+          </button>
+        </div>
+      </main>
+    </section>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- PAGE 5: SETTINGS                       -->
+    <!-- ═══════════════════════════════════════ -->
+    <section id="page-settings" class="page">
+      <header class="top-bar">
+        <div class="top-bar-left">
+          <button class="icon-btn" onclick="goBack()">
+            <span class="material-symbols-outlined">arrow_back</span>
+          </button>
+          <span class="top-bar-title" style="color:var(--primary)">Settings</span>
+        </div>
+      </header>
+
+      <main class="page-content scroll-area">
+        <!-- Profile -->
+        <h3 class="settings-label">PROFILE</h3>
+        <div class="profile-card">
+          <div class="profile-avatar">
+            <div class="avatar-img">曉</div>
+            <div class="avatar-edit"><span class="material-symbols-outlined tiny">edit</span></div>
+          </div>
+          <div class="profile-info">
+            <strong>曉明</strong>
+            <span>xiaoming.user@health.ia</span>
+          </div>
+          <button class="icon-btn"><span class="material-symbols-outlined">chevron_right</span></button>
+        </div>
+
+        <!-- AI Interaction -->
+        <h3 class="settings-label">AI INTERACTION</h3>
+        <div class="settings-card">
+          <div class="settings-inner">
+            <!-- Voice Selection -->
+            <div class="setting-group">
+              <label class="setting-title">
+                <span class="material-symbols-outlined">record_voice_over</span>
+                Voice Selection
+              </label>
+              <div class="voice-options">
+                <button class="voice-btn active">Gentle</button>
+                <button class="voice-btn">Energetic</button>
+                <button class="voice-btn">Calm</button>
+              </div>
+            </div>
+            <!-- Default Mode -->
+            <div class="setting-group">
+              <label class="setting-title">
+                <span class="material-symbols-outlined">psychology</span>
+                Default Mode
+              </label>
+              <div class="mode-options">
+                <div class="mode-option">
+                  <span class="material-symbols-outlined">chat_bubble</span>
+                  <span>NATURAL CHAT</span>
+                </div>
+                <div class="mode-option selected">
+                  <span class="material-symbols-outlined filled">favorite</span>
+                  <span>SOUL MATE</span>
+                </div>
+              </div>
+            </div>
+            <!-- Activity Toggle -->
+            <div class="toggle-row">
+              <div>
+                <strong>Activity Level Sensing</strong>
+                <p>Adjusts responses based on your biometric strain.</p>
+              </div>
+              <button class="toggle on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Privacy & Medical -->
+        <h3 class="settings-label">PRIVACY & MEDICAL (FHIR)</h3>
+        <div class="settings-card-white">
+          <div class="toggle-row">
+            <div class="toggle-row-left">
+              <div class="feature-icon bg-secondary-light"><span class="material-symbols-outlined">database</span></div>
+              <div>
+                <strong>Hospital Data Sync</strong>
+                <p>Real-time FHIR record updates</p>
+              </div>
+            </div>
+            <button class="toggle on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></button>
+          </div>
+          <div class="institution-bar">
+            <div>
+              <span class="inst-label">CONNECTED INSTITUTION</span>
+              <strong>Taipei General Hospital</strong>
+            </div>
+            <span class="material-symbols-outlined filled" style="color:var(--primary)">verified</span>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <strong>Auto-Report Draft</strong>
+              <p>Draft health summaries for your doctor</p>
+            </div>
+            <button class="toggle" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></button>
+          </div>
+        </div>
+
+        <!-- Security -->
+        <h3 class="settings-label">SECURITY</h3>
+        <div class="security-grid">
+          <div class="security-card">
+            <span class="material-symbols-outlined big" style="color:var(--tertiary)">fingerprint</span>
+            <strong>Biometric Lock</strong>
+            <small>FaceID or Fingerprint</small>
+            <button class="link-btn">CONFIGURE</button>
+          </div>
+          <div class="security-card">
+            <span class="material-symbols-outlined big" style="color:var(--primary)">encrypted</span>
+            <strong>Encrypted Backup</strong>
+            <small style="color:var(--primary)">Status: Enabled</small>
+            <button class="link-btn muted">VIEW LOG</button>
+          </div>
+        </div>
+
+        <!-- Version -->
+        <footer class="app-version">
+          <p class="version-text">APP VERSION V1.2.4</p>
+          <p class="version-detail">Encrypted with 256-bit AES. All medical data handling complies with international health privacy standards.</p>
+        </footer>
+      </main>
+    </section>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- BOTTOM NAVIGATION BAR                  -->
+    <!-- ═══════════════════════════════════════ -->
+    <nav id="bottom-nav">
+      <button class="nav-item" data-page="chat" onclick="navigateTo('chat')">
+        <span class="material-symbols-outlined">chat_bubble</span>
+        <span class="nav-label">Chat</span>
+      </button>
+      <button class="nav-item" data-page="mode" onclick="navigateTo('mode')">
+        <span class="material-symbols-outlined">auto_awesome</span>
+        <span class="nav-label">Mode</span>
+      </button>
+      <button class="nav-item active" data-page="reports" onclick="navigateTo('reports')">
+        <span class="material-symbols-outlined">analytics</span>
+        <span class="nav-label">Reports</span>
+      </button>
+      <button class="nav-item" data-page="clinical" onclick="navigateTo('clinical')">
+        <span class="material-symbols-outlined">monitor_heart</span>
+        <span class="nav-label">Clinical</span>
+      </button>
+      <button class="nav-item" data-page="settings" onclick="navigateTo('settings')">
+        <span class="material-symbols-outlined">settings</span>
+        <span class="nav-label">Settings</span>
+      </button>
+    </nav>
+
+  </div><!-- /app-shell -->
+</div><!-- /phone-frame -->
+
+<script src="app.js"></script>
+</body>
+</html>
