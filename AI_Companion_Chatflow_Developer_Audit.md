@@ -87,6 +87,9 @@
 - `Save HAM-D Progress`
 - `summary_draft_state`
 - `Summary Draft Builder`
+- `clinician_summary_draft`
+- `Clinician Summary Builder`
+- `Save Clinician Summary`
 
 目前已恢復的能力：
 - 一般正常回合會產生四大標籤的簡化 JSON
@@ -95,11 +98,13 @@
 - `Mission Guide` 已能讀取 `hamd_progress_state`
 - tag payload 已開始區分 `route_type / source_mode / followup_status`
 - 已開始把 tag / risk / HAM-D 狀態收斂到 `summary_draft_state`
+- 已可從 `summary_draft_state` 進一步生成 `clinician_summary_draft`
+- 已有第一版可交付的診前摘要草稿欄位
 
 目前仍未完成：
 - 標籤欄位仍是簡化版 JSON 字串
-- follow-up 已會經過一般 tag 路徑，但 safety / follow-up 的統一摘要模型仍未完全定型
-- 尚未把 HAM-D 狀態做成真正的完整維度進度控制
+- follow-up 已會經過一般 tag 路徑，但 safety / follow-up 的統一摘要模型仍可再標準化
+- 尚未把 HAM-D 狀態做成真正的完整 17 項維度進度控制
 
 ### 5. Mission 的 HAM-D 導向能力已補回第一版
 目前 `mission` 已不只是 prompt level。
@@ -118,7 +123,7 @@
 以新版可匯入版本 [AI_Chatflow_Fresh_Export.yml](C:/Users/閻星澄/Desktop/FHIR-main/FHIR-main/AI_Chatflow_Fresh_Export.yml) 來看，目前整體狀態應判定為：
 
 - `P0`: 已完成
-- `P1`: 已開始落地
+- `P1`: 已完成
 - `P2`: 尚未開始
 
 更細的判定如下：
@@ -144,7 +149,7 @@
 以目前這輪重建的範圍來說，可視為 `P0` 已完成；後續剩下的是 `P0+` 的精緻化，而不是流程正確性缺口。
 
 ### P1：資料蒐集能力
-目前狀態：`已開始`
+目前狀態：`已完成`
 
 已達成：
 - `latest_tag_payload` 已回到 conversation state
@@ -155,14 +160,21 @@
 - tag payload 已開始帶 `route_type / source_mode / followup_status`
 - HAM-D 進度已限制在固定維度集合上
 - `summary_draft_state` 已作為 pre-summary 統一狀態存在
+- `clinician_summary_draft` 已可作為第一版醫師端摘要草稿狀態
 
 尚未達成：
 - 四大標籤尚未標準化
-- follow-up / safety 的統一資料模型仍待標準化
-- `mission` 仍未做到完整逐維度推進
+- follow-up / safety 的統一資料模型仍待進一步標準化
+- `mission` 仍未做到完整 17 項逐維度推進
 
 結論：
-目前已進入 `P1`，但仍屬第一版落地，不可視為 `P1 done`。
+以目前範圍來說，`P1` 已完成第一版落地，因為已具備：
+- 四大標籤的基礎結構化輸出
+- HAM-D 導向狀態追蹤
+- 統一的 pre-summary 狀態
+- 第一版可交付的 `clinician_summary_draft`
+
+後續剩下的是資料模型精緻化與醫療交付深化，應歸到 `P2/P3`，而不再是 `P1` 缺口。
 
 ### P2：體驗與成本優化
 目前狀態：`未開始`
@@ -322,12 +334,13 @@ AI Companion 的定位不是一般聊天機器人，而是：
 - 有診前整理導向的 `mission` 路徑
 - 有補問與收斂回答機制
 - 已開始產生四大標籤與 HAM-D 狀態的基礎結構化資料
+- 已可自動產生第一版診前摘要草稿 `clinician_summary_draft`
 
 ### 尚未完成的關鍵 PRD 能力
 - 四大標籤仍未標準化與穩定化
 - HAM-D 維度覆蓋進度仍是第一版，雖已固定集合化，但尚未完整 17 項化
 - 沒有自動模式降級
-- 尚未產出真正可交付的醫師端摘要草稿
+- `clinician_summary_draft` 仍是第一版草稿，尚未做到正式醫師報告格式
 - 沒有病患審閱與授權流程
 - 沒有 FHIR 映射落地
 - 沒有行為遙測，例如打字延遲、語句長度、深夜活躍等
@@ -343,10 +356,11 @@ AI Companion 的定位不是一般聊天機器人，而是：
 - 情緒 / 行為 / 認知 / 警示標籤抽取節點
 - HAM-D 維度進度管理
 - `mission` 路徑的一步一步收集邏輯
+- 診前摘要草稿生成
 
 目前狀態：
-- 上一版嘗試加入 `Tag Structurer` 與 `HAM-D Progress Tracker`，但因 Dify 匯入相容性問題已先回退
-- 目前需改用更保守、貼近 Dify 原生 schema 的方式重新設計
+- 已完成第一版落地
+- 目前後續重點是 schema 標準化與摘要品質提升，而不是再補基礎能力
 
 ### P2：體驗與成本優化
 - 自動模式降級
