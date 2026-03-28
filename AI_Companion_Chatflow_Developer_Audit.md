@@ -44,42 +44,38 @@
 - 尚未做更細的 red flag 類別標準化
 - 尚未做外部通報或醫療端通知
 
-### 2. 補問狀態機已簡化回單一欄位
-目前新版骨架版只保留：
-- `pending_question`
-- `Follow-up Gate`
-- `Follow-up Resolver`
-- `Save Pending Question`
-- `Clear Pending Question`
-
-目前沒有：
+### 2. 補問狀態機已補回可收斂版本
+目前新版骨架版已新增：
 - `followup_turn_count`
 - `followup_status`
 - `active_mode`
-- 補問輪數上限控制
+- `Follow-up Limit Gate`
+- `Follow-up Output Classifier`
 - `Follow-up Finalizer`
-- `followup_ask_more / followup_answer_now` 的二次分類
+- `Save Follow-up Question`
 
-這代表新版骨架版目前只有「基礎跨回合補問」，但還沒有穩定的兩輪收斂機制。
+目前已恢復的能力：
+- 已有跨回合補問狀態
+- 第一輪補問後可再進一次 follow-up
+- 若 `Follow-up Resolver` 判斷還要補一題，會留下第二輪補問
+- 若已達第二輪上限，會強制走 `Follow-up Finalizer`
+- `Clear Pending Question` 會同步清掉補問狀態，避免殘留
 
-風險：
-- 可能再次出現追問狀態過早清空
-- 可能缺乏明確收斂邏輯
-- 還不能宣稱 `P0` 的補問狀態穩定化已完成
+目前仍未完成：
+- 沒有更細緻的補問原因分類
+- 沒有補問對應 HAM-D 維度記錄
 
-### 3. classifier 與 retrieval 的解耦有部分倒退
-目前新版骨架版的好消息是：
-- `Intent Classifier` 沒有再吃 retrieval context
+### 3. classifier 與 retrieval 的解耦已補回
+目前新版骨架版已恢復為：
+- `Intent Classifier` 不吃 retrieval context
+- `mission` 使用 retrieval
+- `option` 使用 retrieval
+- `natural` 不使用 retrieval
 
-但目前新版骨架版又重新變成：
-- `natural` 也走 retrieval
-
-這和先前的低成本設計不同。
-
-風險：
-- 一般自然聊天會再次打知識庫
-- 陪伴感可能被檢索式輸出污染
-- 成本控制從原本的 `mission / option only` 倒退為 `mission / option / natural`
+目前已恢復的能力：
+- 一般自然聊天不再每輪打知識庫
+- classifier 與 retrieval 已重新拆開
+- 成本控制回到較符合 PRD 的低干擾設計
 
 ### 4. P1 的結構化資料能力目前全部未落地
 目前新版骨架版沒有：
@@ -104,30 +100,31 @@
 ## 目前所在階段判定
 以新版可匯入版本 [AI_Chatflow_Fresh_Export.yml](C:/Users/閻星澄/Desktop/FHIR-main/FHIR-main/AI_Chatflow_Fresh_Export.yml) 來看，目前整體狀態應判定為：
 
-- `P0`: 部分完成，但尚未完成
+- `P0`: 已完成
 - `P1`: 尚未開始落地
 - `P2`: 尚未開始
 
 更細的判定如下：
 
 ### P0：流程正確性與安全
-目前狀態：`進行中`
+目前狀態：`已完成`
 
 已達成：
 - 新版骨架可匯入
 - 六模式分流可運作
 - 已補回高風險分流第一版
 - `risk_flag` / `red_flag_payload` 已回到 conversation state
-- `pending_question` 基礎補問機制可運作
+- `pending_question` / `followup_turn_count` / `followup_status` / `active_mode` 已回到 conversation state
+- 補問最多兩輪後會強制收斂
 - classifier 沒有直接依賴 retrieval context
+- `natural` 已從 retrieval 解耦
 
 尚未達成：
-- 補問兩輪上限與收斂控制
-- `natural` 從 retrieval 解耦
 - red flag 結構仍偏簡化版
+- 高風險分級仍未細化
 
 結論：
-目前可視為 `P0` 前半段已落地，但還不能視為 `P0 done`。
+以目前這輪重建的範圍來說，可視為 `P0` 已完成；後續剩下的是 `P0+` 的精緻化，而不是流程正確性缺口。
 
 ### P1：資料蒐集能力
 目前狀態：`未開始`
@@ -198,6 +195,7 @@ AI Companion 的定位不是一般聊天機器人，而是：
 - `active_mode`
 - `risk_flag`
 - `followup_status`
+- `red_flag_payload`
 
 目前補問邏輯：
 - 若已有 `pending_question`，優先走 follow-up gate
@@ -250,7 +248,7 @@ AI Companion 的定位不是一般聊天機器人，而是：
 
 目前設計：
 - `mission` 使用 retrieval
-- `option` 使用 retrieval，且 `top_k` 已降為 `2`
+- `option` 使用 retrieval
 - `natural` 不做 retrieval
 - `void / soulmate / clarify / follow-up / safety` 不做 retrieval
 - `Intent Classifier` 不再依賴 retrieval 結果

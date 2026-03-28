@@ -35,6 +35,30 @@ workflow:
     - red_flag_payload
     value: ''
     value_type: string
+  - id: followup-turn-count-var
+    name: followup_turn_count
+    description: Number of consecutive clarification turns in the current follow-up chain
+    selector:
+    - conversation
+    - followup_turn_count
+    value: '0'
+    value_type: string
+  - id: followup-status-var
+    name: followup_status
+    description: Current follow-up lifecycle state
+    selector:
+    - conversation
+    - followup_status
+    value: none
+    value_type: string
+  - id: active-mode-var
+    name: active_mode
+    description: Last resolved routing mode for the current turn
+    selector:
+    - conversation
+    - active_mode
+    value: ''
+    value_type: string
   environment_variables: []
   features:
     file_upload:
@@ -122,6 +146,15 @@ workflow:
       targetHandle: target
       type: custom
     - data:
+        sourceType: if-else
+        targetType: if-else
+      id: gate-followup-limit
+      source: followup-gate
+      sourceHandle: 'true'
+      target: followup-limit-gate
+      targetHandle: target
+      type: custom
+    - data:
         sourceType: llm
         targetType: assigner
       id: risk-structurer-assign
@@ -150,11 +183,20 @@ workflow:
       type: custom
     - data:
         sourceType: if-else
-        targetType: llm
-      id: gate-followup
-      source: followup-gate
-      sourceHandle: 'true'
+        targetType: question-classifier
+      id: gate-followup-resolver
+      source: followup-limit-gate
+      sourceHandle: 'false'
       target: llm-followup
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: if-else
+        targetType: llm
+      id: gate-followup-finalize
+      source: followup-limit-gate
+      sourceHandle: 'true'
+      target: llm-followup-final
       targetHandle: target
       type: custom
     - data:
@@ -168,55 +210,109 @@ workflow:
       type: custom
     - data:
         sourceType: question-classifier
-        targetType: llm
+        targetType: assigner
       id: classifier-void
       source: classifier
       sourceHandle: mode_1_void
+      target: set-mode-void
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: assigner
+        targetType: llm
+      id: set-mode-void-llm
+      source: set-mode-void
+      sourceHandle: source
       target: llm-void
       targetHandle: target
       type: custom
     - data:
         sourceType: question-classifier
-        targetType: llm
+        targetType: assigner
       id: classifier-soulmate
       source: classifier
       sourceHandle: mode_2_soulmate
+      target: set-mode-soulmate
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: assigner
+        targetType: llm
+      id: set-mode-soulmate-llm
+      source: set-mode-soulmate
+      sourceHandle: source
       target: llm-soulmate
       targetHandle: target
       type: custom
     - data:
         sourceType: question-classifier
-        targetType: knowledge-retrieval
+        targetType: assigner
       id: classifier-mission
       source: classifier
       sourceHandle: mode_3_mission
+      target: set-mode-mission
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: assigner
+        targetType: knowledge-retrieval
+      id: set-mode-mission-retrieval
+      source: set-mode-mission
+      sourceHandle: source
       target: retrieval-mission
       targetHandle: target
       type: custom
     - data:
         sourceType: question-classifier
-        targetType: knowledge-retrieval
+        targetType: assigner
       id: classifier-option
       source: classifier
       sourceHandle: mode_4_option
+      target: set-mode-option
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: assigner
+        targetType: knowledge-retrieval
+      id: set-mode-option-retrieval
+      source: set-mode-option
+      sourceHandle: source
       target: retrieval-option
       targetHandle: target
       type: custom
     - data:
         sourceType: question-classifier
-        targetType: knowledge-retrieval
+        targetType: assigner
       id: classifier-natural
       source: classifier
       sourceHandle: mode_5_natural
-      target: retrieval-natural
+      target: set-mode-natural
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: assigner
+        targetType: llm
+      id: set-mode-natural-llm
+      source: set-mode-natural
+      sourceHandle: source
+      target: llm-natural
       targetHandle: target
       type: custom
     - data:
         sourceType: question-classifier
-        targetType: llm
+        targetType: assigner
       id: classifier-clarify
       source: classifier
       sourceHandle: mode_6_clarify
+      target: set-mode-clarify
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: assigner
+        targetType: llm
+      id: set-mode-clarify-llm
+      source: set-mode-clarify
+      sourceHandle: source
       target: llm-clarify
       targetHandle: target
       type: custom
@@ -239,19 +335,37 @@ workflow:
       targetHandle: target
       type: custom
     - data:
-        sourceType: knowledge-retrieval
-        targetType: llm
-      id: retrieval-natural-llm
-      source: retrieval-natural
+        sourceType: llm
+        targetType: question-classifier
+      id: followup-output-classify-edge
+      source: llm-followup
       sourceHandle: source
-      target: llm-natural
+      target: followup-output-classifier
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: question-classifier
+        targetType: assigner
+      id: followup-output-askmore
+      source: followup-output-classifier
+      sourceHandle: followup_ask_more
+      target: save-pending-followup
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: question-classifier
+        targetType: assigner
+      id: followup-output-answernow
+      source: followup-output-classifier
+      sourceHandle: followup_answer_now
+      target: clear-pending
       targetHandle: target
       type: custom
     - data:
         sourceType: llm
         targetType: assigner
-      id: followup-clear
-      source: llm-followup
+      id: followup-final-clear
+      source: llm-followup-final
       sourceHandle: source
       target: clear-pending
       targetHandle: target
@@ -436,6 +550,12 @@ workflow:
           variable_selector:
           - conversation
           - pending_question
+        - input_type: constant
+          operation: overwrite
+          value: safety
+          variable_selector:
+          - conversation
+          - active_mode
         title: Set Risk State
         type: assigner
         version: '2'
@@ -517,6 +637,132 @@ workflow:
       targetPosition: left
       type: custom
     - data:
+        items:
+        - input_type: constant
+          operation: overwrite
+          value: mode_1_void
+          variable_selector:
+          - conversation
+          - active_mode
+        title: Set Active Mode Void
+        type: assigner
+        version: '2'
+      id: set-mode-void
+      position:
+        x: 900
+        y: 20
+      positionAbsolute:
+        x: 900
+        y: 20
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        items:
+        - input_type: constant
+          operation: overwrite
+          value: mode_2_soulmate
+          variable_selector:
+          - conversation
+          - active_mode
+        title: Set Active Mode Soulmate
+        type: assigner
+        version: '2'
+      id: set-mode-soulmate
+      position:
+        x: 900
+        y: 180
+      positionAbsolute:
+        x: 900
+        y: 180
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        items:
+        - input_type: constant
+          operation: overwrite
+          value: mode_3_mission
+          variable_selector:
+          - conversation
+          - active_mode
+        title: Set Active Mode Mission
+        type: assigner
+        version: '2'
+      id: set-mode-mission
+      position:
+        x: 900
+        y: 300
+      positionAbsolute:
+        x: 900
+        y: 300
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        items:
+        - input_type: constant
+          operation: overwrite
+          value: mode_4_option
+          variable_selector:
+          - conversation
+          - active_mode
+        title: Set Active Mode Option
+        type: assigner
+        version: '2'
+      id: set-mode-option
+      position:
+        x: 900
+        y: 480
+      positionAbsolute:
+        x: 900
+        y: 480
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        items:
+        - input_type: constant
+          operation: overwrite
+          value: mode_5_natural
+          variable_selector:
+          - conversation
+          - active_mode
+        title: Set Active Mode Natural
+        type: assigner
+        version: '2'
+      id: set-mode-natural
+      position:
+        x: 900
+        y: 660
+      positionAbsolute:
+        x: 900
+        y: 660
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        items:
+        - input_type: constant
+          operation: overwrite
+          value: mode_6_clarify
+          variable_selector:
+          - conversation
+          - active_mode
+        title: Set Active Mode Clarify
+        type: assigner
+        version: '2'
+      id: set-mode-clarify
+      position:
+        x: 900
+        y: 840
+      positionAbsolute:
+        x: 900
+        y: 840
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
         cases:
         - case_id: pending_not_empty
           conditions:
@@ -533,6 +779,27 @@ workflow:
       positionAbsolute:
         x: 340
         y: 420
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        cases:
+        - case_id: limit_reached
+          conditions:
+          - comparison_operator: is
+            value: '2'
+            variable_selector:
+            - conversation
+            - followup_turn_count
+        title: Follow-up Limit Gate
+        type: if-else
+      id: followup-limit-gate
+      position:
+        x: 620
+        y: 160
+      positionAbsolute:
+        x: 620
+        y: 160
       sourcePosition: right
       targetPosition: left
       type: custom
@@ -663,7 +930,7 @@ workflow:
         multiple_retrieval_config:
           reranking_enable: false
           reranking_mode: reranking_model
-          top_k: 4
+          top_k: 2
         query_attachment_selector: []
         query_variable_selector:
         - sys
@@ -792,35 +1059,9 @@ workflow:
       targetPosition: left
       type: custom
     - data:
-        dataset_ids:
-        - JB1PuOSPlWXMsgVAkT5B4u/hSkfNYLAS+G+Zmysp3Fhot7pSACV7KyX378KBhRU7
-        multiple_retrieval_config:
-          reranking_enable: false
-          reranking_mode: reranking_model
-          top_k: 4
-        query_attachment_selector: []
-        query_variable_selector:
-        - sys
-        - query
-        retrieval_mode: multiple
-        title: Natural Retrieval
-        type: knowledge-retrieval
-      id: retrieval-natural
-      position:
-        x: 940
-        y: 660
-      positionAbsolute:
-        x: 940
-        y: 660
-      sourcePosition: right
-      targetPosition: left
-      type: custom
-    - data:
         context:
-          enabled: true
-          variable_selector:
-          - retrieval-natural
-          - result
+          enabled: false
+          variable_selector: []
         memory:
           query_prompt_template: '{{#sys.query#}}
 
@@ -843,7 +1084,7 @@ workflow:
             規則：
             1. 語氣自然，不要像客服。
             2. 如果使用者有負面情緒，先共感，不要直接轉成閒聊。
-            3. 如果知識庫有內容，再用知識庫補充。
+            3. 如果需要追問，最多只追一個小問題。
         title: Smart Hunter
         type: llm
         vision:
@@ -855,6 +1096,38 @@ workflow:
       positionAbsolute:
         x: 1240
         y: 660
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        classes:
+        - id: followup_ask_more
+          name: Ask More
+        - id: followup_answer_now
+          name: Answer Now
+        instruction: |
+          你要判斷上一個 follow-up 回覆是否仍然是一個補問。
+          如果內容主要是在再問一個最小問題，輸出 followup_ask_more。
+          如果內容主要是在直接回答或收斂，輸出 followup_answer_now。
+          只輸出類別代號。
+        model:
+          completion_params:
+            temperature: 0
+          mode: chat
+          name: ''
+          provider: ''
+        query_variable_selector:
+        - llm-followup
+        - text
+        title: Follow-up Output Classifier
+        type: question-classifier
+      id: followup-output-classifier
+      position:
+        x: 900
+        y: 80
+      positionAbsolute:
+        x: 900
+        y: 80
       sourcePosition: right
       targetPosition: left
       type: custom
@@ -882,7 +1155,8 @@ workflow:
             你正在處理上一輪留下的補問。
             已知補問內容：{{#conversation.pending_question#}}
             請根據使用者本輪回答，直接完成上一輪對話。
-            如果資訊仍不足，只再提出一個最小補問，不要連續追問。
+            如果資訊仍不足，且目前還沒到第二輪上限，只再提出一個最小補問。
+            不要一次問超過一個問題。
         title: Follow-up Resolver
         type: llm
         vision:
@@ -894,6 +1168,45 @@ workflow:
       positionAbsolute:
         x: 620
         y: 80
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        memory:
+          query_prompt_template: '{{#sys.query#}}
+
+
+            {{#sys.files#}}'
+          window:
+            enabled: false
+            size: 10
+        model:
+          completion_params:
+            temperature: 0.3
+          mode: chat
+          name: ''
+          provider: ''
+        prompt_template:
+        - role: system
+          text: |
+            你正在處理最後一次補問收斂。
+            已知補問內容：{{#conversation.pending_question#}}
+            現在不允許再追問。
+            請根據目前已有資訊，給出最好的收斂回答。
+        title: Follow-up Finalizer
+        type: llm
+        vision:
+          enabled: false
+      id: llm-followup-final
+      position:
+        x: 900
+        y: 160
+      positionAbsolute:
+        x: 900
+        y: 160
       sourcePosition: right
       targetPosition: left
       type: custom
@@ -945,6 +1258,18 @@ workflow:
           variable_selector:
           - conversation
           - pending_question
+        - input_type: constant
+          operation: overwrite
+          value: '0'
+          variable_selector:
+          - conversation
+          - followup_turn_count
+        - input_type: constant
+          operation: overwrite
+          value: resolved
+          variable_selector:
+          - conversation
+          - followup_status
         title: Clear Pending Question
         type: assigner
         version: '2'
@@ -968,6 +1293,18 @@ workflow:
           variable_selector:
           - conversation
           - pending_question
+        - input_type: constant
+          operation: overwrite
+          value: '1'
+          variable_selector:
+          - conversation
+          - followup_turn_count
+        - input_type: constant
+          operation: overwrite
+          value: pending
+          variable_selector:
+          - conversation
+          - followup_status
         title: Save Pending Question
         type: assigner
         version: '2'
@@ -978,6 +1315,47 @@ workflow:
       positionAbsolute:
         x: 1540
         y: 840
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        items:
+        - input_type: variable
+          operation: overwrite
+          value:
+          - llm-followup
+          - text
+          variable_selector:
+          - conversation
+          - pending_question
+        - input_type: constant
+          operation: overwrite
+          value: '2'
+          variable_selector:
+          - conversation
+          - followup_turn_count
+        - input_type: constant
+          operation: overwrite
+          value: pending
+          variable_selector:
+          - conversation
+          - followup_status
+        - input_type: constant
+          operation: overwrite
+          value: followup
+          variable_selector:
+          - conversation
+          - active_mode
+        title: Save Follow-up Question
+        type: assigner
+        version: '2'
+      id: save-pending-followup
+      position:
+        x: 1180
+        y: 80
+      positionAbsolute:
+        x: 1180
+        y: 80
       sourcePosition: right
       targetPosition: left
       type: custom
