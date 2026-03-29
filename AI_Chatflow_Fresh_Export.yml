@@ -123,6 +123,22 @@ workflow:
     - fhir_delivery_draft
     value: ''
     value_type: string
+  - id: mission-retrieval-audit-var
+    name: mission_retrieval_audit
+    description: Retrieval governance snapshot for mission mode knowledge usage
+    selector:
+    - conversation
+    - mission_retrieval_audit
+    value: ''
+    value_type: string
+  - id: option-retrieval-audit-var
+    name: option_retrieval_audit
+    description: Retrieval governance snapshot for option mode knowledge usage
+    selector:
+    - conversation
+    - option_retrieval_audit
+    value: ''
+    value_type: string
   environment_variables: []
   features:
     file_upload:
@@ -608,8 +624,26 @@ workflow:
     - data:
         sourceType: knowledge-retrieval
         targetType: llm
-      id: retrieval-mission-hamd
+      id: retrieval-mission-audit-edge
       source: retrieval-mission
+      sourceHandle: source
+      target: mission-retrieval-audit
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: llm
+        targetType: assigner
+      id: mission-audit-save-edge
+      source: mission-retrieval-audit
+      sourceHandle: source
+      target: save-mission-retrieval-audit
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: assigner
+        targetType: llm
+      id: mission-audit-hamd-edge
+      source: save-mission-retrieval-audit
       sourceHandle: source
       target: hamd-progress-tracker
       targetHandle: target
@@ -770,8 +804,26 @@ workflow:
     - data:
         sourceType: knowledge-retrieval
         targetType: llm
-      id: retrieval-option-llm
+      id: retrieval-option-audit-edge
       source: retrieval-option
+      sourceHandle: source
+      target: option-retrieval-audit
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: llm
+        targetType: assigner
+      id: option-audit-save-edge
+      source: option-retrieval-audit
+      sourceHandle: source
+      target: save-option-retrieval-audit
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: assigner
+        targetType: llm
+      id: option-audit-llm-edge
+      source: save-option-retrieval-audit
       sourceHandle: source
       target: llm-option
       targetHandle: target
@@ -974,6 +1026,82 @@ workflow:
       positionAbsolute:
         x: 340
         y: 120
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - retrieval-mission
+          - result
+        memory:
+          query_prompt_template: '{{#sys.query#}}
+
+
+            {{#sys.files#}}'
+          window:
+            enabled: false
+            size: 10
+        model:
+          completion_params:
+            temperature: 0
+          mode: chat
+          name: ''
+          provider: ''
+        prompt_template:
+        - role: system
+          text: |
+            你是 mission 路徑的 retrieval 治理節點。
+            你的任務不是回答病人，而是評估這次知識檢索值不值得被主回答使用。
+            你必須只輸出 JSON，格式固定如下：
+            {
+              "retrieval_status":"strong_or_weak_or_empty",
+              "use_knowledge":"yes_or_no",
+              "knowledge_role":"hamd_mapping_or_structuring_or_none",
+              "confidence_note":"...",
+              "safe_usage_note":"..."
+            }
+            判斷規則：
+            1. 如果檢索內容和本輪目標高度相關，且能幫助症狀整理或 HAM-D 維度推進，可標成 strong。
+            2. 如果只有部分相關、內容泛泛、容易讓回答變成衛教長文，標成 weak。
+            3. 如果幾乎沒有可用內容，標成 empty，且 use_knowledge 必須是 no。
+            4. mission 路徑就算命中 weak，也不能硬套知識庫；應優先維持結構化整理。
+            5. `safe_usage_note` 要明確提醒主回答：知識可以怎麼用，或為何不要用。
+        title: Mission Retrieval Audit
+        type: llm
+        vision:
+          enabled: false
+      id: mission-retrieval-audit
+      position:
+        x: 1240
+        y: 140
+      positionAbsolute:
+        x: 1240
+        y: 140
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        items:
+        - input_type: variable
+          operation: overwrite
+          value:
+          - mission-retrieval-audit
+          - text
+          variable_selector:
+          - conversation
+          - mission_retrieval_audit
+        title: Save Mission Retrieval Audit
+        type: assigner
+        version: '2'
+      id: save-mission-retrieval-audit
+      position:
+        x: 1540
+        y: 140
+      positionAbsolute:
+        x: 1540
+        y: 140
       sourcePosition: right
       targetPosition: left
       type: custom
@@ -2364,6 +2492,7 @@ workflow:
             4. `supported_dimensions` 可列出本輪有被觸及的維度；`covered_dimensions` 表示整體已累積到的維度。
             5. `next_recommended_dimension` 應根據目前缺口與病人負擔，選一個最值得後續自然追蹤的維度。
             你必須讓 `covered_dimensions` 和 `missing_dimensions` 都只使用上述固定代號。
+            目前 mission retrieval 治理：{{#conversation.mission_retrieval_audit#}}
             只輸出 JSON，不要加解釋。
         title: HAM-D Progress Tracker
         type: llm
@@ -2434,8 +2563,10 @@ workflow:
             4. 每次只推進一個最重要的 HAM-D 面向。
             5. 如果看出病人負擔很高，就把步驟縮小，不要一次推太多。
             6. 知識庫在這條路徑上的用途，是幫你做結構化整理與症狀映射，不是做泛泛的衛教長文。
+            7. 如果 `mission_retrieval_audit` 顯示 weak 或 empty，就不要硬套知識內容，改用已有狀態與病人原話做整理。
             目前 HAM-D 狀態：{{#conversation.hamd_progress_state#}}
             目前標籤狀態：{{#conversation.latest_tag_payload#}}
+            目前 retrieval 治理：{{#conversation.mission_retrieval_audit#}}
             如果 `next_recommended_dimension` 有值，優先圍繞那個維度前進。
         title: Mission Guide
         type: llm
@@ -2457,7 +2588,7 @@ workflow:
         multiple_retrieval_config:
           reranking_enable: false
           reranking_mode: reranking_model
-          top_k: 4
+          top_k: 3
         query_attachment_selector: []
         query_variable_selector:
         - sys
@@ -2472,6 +2603,82 @@ workflow:
       positionAbsolute:
         x: 940
         y: 480
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - retrieval-option
+          - result
+        memory:
+          query_prompt_template: '{{#sys.query#}}
+
+
+            {{#sys.files#}}'
+          window:
+            enabled: false
+            size: 10
+        model:
+          completion_params:
+            temperature: 0
+          mode: chat
+          name: ''
+          provider: ''
+        prompt_template:
+        - role: system
+          text: |
+            你是 option 路徑的 retrieval 治理節點。
+            你的任務不是回答病人，而是判斷這次檢索是否真的能幫忙產生更貼近狀態的短選項。
+            你必須只輸出 JSON，格式固定如下：
+            {
+              "retrieval_status":"strong_or_weak_or_empty",
+              "use_knowledge":"yes_or_no",
+              "knowledge_role":"option_shaping_or_none",
+              "confidence_note":"...",
+              "safe_usage_note":"..."
+            }
+            判斷規則：
+            1. 只有當檢索內容能直接幫助選項更貼近病人狀態、更省力時，才可標成 strong。
+            2. 如果內容太抽象、太長、太像衛教，標成 weak。
+            3. 如果沒有明顯可用內容，標成 empty，且 use_knowledge 必須是 no。
+            4. option 路徑不能因為有知識庫就變成分析報告；弱命中時寧可不用。
+            5. `safe_usage_note` 要清楚說明知識最多只能如何輕量使用。
+        title: Option Retrieval Audit
+        type: llm
+        vision:
+          enabled: false
+      id: option-retrieval-audit
+      position:
+        x: 1240
+        y: 400
+      positionAbsolute:
+        x: 1240
+        y: 400
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        items:
+        - input_type: variable
+          operation: overwrite
+          value:
+          - option-retrieval-audit
+          - text
+          variable_selector:
+          - conversation
+          - option_retrieval_audit
+        title: Save Option Retrieval Audit
+        type: assigner
+        version: '2'
+      id: save-option-retrieval-audit
+      position:
+        x: 1540
+        y: 400
+      positionAbsolute:
+        x: 1540
+        y: 400
       sourcePosition: right
       targetPosition: left
       type: custom
@@ -2507,6 +2714,8 @@ workflow:
             4. 選項要短、可回覆、可直接作答，適合低能量或講不清楚的病人。
             5. 不要列長篇優缺點分析，避免增加認知負擔。
             6. 知識庫在這條路徑上的用途，是幫你設計更貼近病人狀態的短選項，不是做完整教育或深度分析。
+            7. 如果 `option_retrieval_audit` 顯示 weak 或 empty，就不要引用知識內容，直接根據病人原話設計短選項。
+            目前 retrieval 治理：{{#conversation.option_retrieval_audit#}}
         title: Option Selector
         type: llm
         vision:

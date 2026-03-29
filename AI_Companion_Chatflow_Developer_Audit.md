@@ -188,14 +188,19 @@
 - 已在 prompt 層限制知識庫用途，避免任務型知識內容污染陪伴感
 - 已新增獨立的 `Low Energy Detector`
 - 目前在沒有手動 override 時，會先經過低能量 / 高負擔偵測，再決定是否降級到 `option` 或 `soulmate`
+- 已新增 `Mission Retrieval Audit`
+- 已新增 `Option Retrieval Audit`
+- `mission` 與 `option` 現在都會先判斷 retrieval 命中品質，再決定是否採用知識庫內容
+- 若命中為 weak / empty，主回答會明確避免硬套知識庫，改以病人原話、既有狀態與結構化資料為主
+- `option` 的 retrieval `top_k` 已進一步收斂到 `3`
 
 尚未落地：
 - 多知識庫分層
-- retrieval 命中品質監控
 - 更細緻的多級負擔分級
+- 更完整的 retrieval 命中觀測指標與離線評估
 
 結論：
-目前 `P2` 已進入第二輪，已把自動降級從 classifier 規則提升到獨立 detector。
+目前 `P2` 已進入第三輪，已把 retrieval 治理從單純 prompt 提醒，提升到實際的 audit 狀態節點。
 
 ### P3：醫療交付能力
 目前狀態：`已開始`
