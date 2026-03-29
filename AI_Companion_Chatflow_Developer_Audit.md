@@ -216,6 +216,12 @@
 - 已新增 `FHIR Delivery Builder`
 - `clinician_summary_draft` 之後已可再生成病人審閱包
 - 病人審閱包之後已可再生成 FHIR / TW Core 映射草稿
+- 已新增 `patient_authorization_state`
+- 已新增 `Patient Authorization Builder`
+- 已新增 `delivery_readiness_state`
+- 已新增 `Delivery Readiness Builder`
+- 現在已能把「病人審閱中 / 可進同意 / 仍需修正 / 暫不分享」整理成結構化狀態
+- 現在已能把 FHIR draft 再整理成 backend handoff 前的 readiness 狀態
 
 尚未達成：
 - 還沒有真正的病患按鈕式審閱 / 編輯 / 授權 UI
@@ -224,11 +230,7 @@
 - 還沒有 `preliminary -> final` 的授權後狀態轉換
 
 結論：
-目前 `P3` 已進入第一輪落地，但仍屬交付前草稿階段，重點是先把：
-- 病人審閱資料包
-- FHIR 映射草稿
-
-這兩個「交付底座」先建立起來。
+目前 `P3` 已進入第二輪，已從單純的審閱包 / FHIR draft，往授權狀態與交付 readiness 再推進一步，但仍屬交付前草稿階段。
 
 ## 核心產品定位
 AI Companion 的定位不是一般聊天機器人，而是：
