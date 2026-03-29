@@ -401,10 +401,10 @@ workflow:
     - data:
         sourceType: if-else
         targetType: question-classifier
-      id: override-gate-classifier
+      id: override-gate-low-energy
       source: override-gate
       sourceHandle: 'false'
-      target: classifier
+      target: low-energy-detector
       targetHandle: target
       type: custom
     - data:
@@ -414,6 +414,33 @@ workflow:
       source: override-gate
       sourceHandle: 'true'
       target: override-router
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: question-classifier
+        targetType: question-classifier
+      id: low-energy-continue-classifier
+      source: low-energy-detector
+      sourceHandle: continue_auto
+      target: classifier
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: question-classifier
+        targetType: assigner
+      id: low-energy-option-route
+      source: low-energy-detector
+      sourceHandle: degrade_option
+      target: set-mode-option
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: question-classifier
+        targetType: assigner
+      id: low-energy-soulmate-route
+      source: low-energy-detector
+      sourceHandle: degrade_soulmate
+      target: set-mode-soulmate
       targetHandle: target
       type: custom
     - data:
@@ -2112,6 +2139,44 @@ workflow:
       type: custom
     - data:
         classes:
+        - id: degrade_option
+          name: Degrade To Option
+        - id: degrade_soulmate
+          name: Degrade To Soulmate
+        - id: continue_auto
+          name: Continue Auto
+        instruction: |
+          你是低能量與認知負擔偵測器。
+          目的是在正式意圖分類前，先判斷這一輪是否應該自動降級到更低負擔的互動模式。
+          請只輸出一個類別代號。
+          規則：
+          - 若使用者呈現很短句、模糊、無法組織、明顯低能量、只回不知道/都可以/嗯/隨便、看起來不適合直接做整理，輸出 degrade_option。
+          - 若使用者明顯需要先被接住、情緒承載高、脆弱、委屈、想被陪伴，而不是被推進任務，輸出 degrade_soulmate。
+          - 若目前看起來仍可正常進入一般分流，輸出 continue_auto。
+          - 這個節點是降級保護，不要因為輕微負面情緒就過度攔截 mission。
+        model:
+          completion_params:
+            temperature: 0
+          mode: chat
+          name: ''
+          provider: ''
+        query_variable_selector:
+        - sys
+        - query
+        title: Low Energy Detector
+        type: question-classifier
+      id: low-energy-detector
+      position:
+        x: 620
+        y: 520
+      positionAbsolute:
+        x: 620
+        y: 520
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        classes:
         - id: mode_1_void
           name: Void Box
         - id: mode_2_soulmate
@@ -2364,10 +2429,11 @@ workflow:
             目標是幫病人做診前整理，而不是一般陪聊。
             規則：
             1. 先回應使用者的核心整理目標。
-            2. 只有在有助於診前整理、回診準備、症狀梳理時，才使用知識庫內容。
+            2. 只有在有助於診前整理、回診準備、症狀梳理、HAM-D 維度推進時，才使用知識庫內容。
             3. 輸出要清楚、分段、可行，但不要像在填問卷。
             4. 每次只推進一個最重要的 HAM-D 面向。
             5. 如果看出病人負擔很高，就把步驟縮小，不要一次推太多。
+            6. 知識庫在這條路徑上的用途，是幫你做結構化整理與症狀映射，不是做泛泛的衛教長文。
             目前 HAM-D 狀態：{{#conversation.hamd_progress_state#}}
             目前標籤狀態：{{#conversation.latest_tag_payload#}}
             如果 `next_recommended_dimension` 有值，優先圍繞那個維度前進。
@@ -2440,6 +2506,7 @@ workflow:
             3. 若知識庫有內容，只能拿來幫助你把選項設計得更合適，不要輸出像報告。
             4. 選項要短、可回覆、可直接作答，適合低能量或講不清楚的病人。
             5. 不要列長篇優缺點分析，避免增加認知負擔。
+            6. 知識庫在這條路徑上的用途，是幫你設計更貼近病人狀態的短選項，不是做完整教育或深度分析。
         title: Option Selector
         type: llm
         vision:

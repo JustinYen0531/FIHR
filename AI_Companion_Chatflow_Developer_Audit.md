@@ -186,14 +186,16 @@
 - 情緒明顯、需要先被接住的輸入，會更傾向落到 `mode_2_soulmate`
 - `mission`、`option`、`natural` 的 prompt 角色已重新校正
 - 已在 prompt 層限制知識庫用途，避免任務型知識內容污染陪伴感
+- 已新增獨立的 `Low Energy Detector`
+- 目前在沒有手動 override 時，會先經過低能量 / 高負擔偵測，再決定是否降級到 `option` 或 `soulmate`
 
 尚未落地：
-- 獨立的 cognitive load / 低能量 detector
 - 多知識庫分層
 - retrieval 命中品質監控
+- 更細緻的多級負擔分級
 
 結論：
-目前 `P2` 已完成第一輪，先把自動降級與三條模式分工拉正。
+目前 `P2` 已進入第二輪，已把自動降級從 classifier 規則提升到獨立 detector。
 
 ### P3：醫療交付能力
 目前狀態：`已開始`
@@ -311,7 +313,7 @@ AI Companion 的定位不是一般聊天機器人，而是：
 
 目前尚未達成：
 - 沒有病患主動手動切模式
-- 沒有獨立的自動模式降級 detector
+- 沒有更細緻的多級自動模式降級 detector
 - `mission` 還沒有完整的維度進度控制
 
 ### 3.0 手動指令模式覆寫
@@ -568,8 +570,9 @@ AI Companion 的定位不是一般聊天機器人，而是：
 
 目前狀態：
 - 已完成第一輪落地
-- 目前已把 classifier 的自動降級規則與 prompt-level 分工補上
-- 下一步應進入獨立 detector、dataset 分層與 retrieval 品質監控
+- 已完成第二輪中的獨立 detector 接入
+- 目前已把 classifier 的自動降級規則、獨立 low-energy gate 與 prompt-level 分工補上
+- 下一步應進入 dataset 分層與 retrieval 品質監控
 
 ### P3：醫療交付能力
 - AI 診前摘要草稿
