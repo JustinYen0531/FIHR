@@ -282,6 +282,137 @@ AI Companion 的定位不是一般聊天機器人，而是：
 - 沒有自動模式降級邏輯
 - `mission` 還沒有完整的維度進度控制
 
+### 3.1 哪些模式會進入醫師參考資料
+目前不是把所有原始對話逐字送給醫師，而是先把各模式蒐集到的內容收斂成：
+- `latest_tag_payload`
+- `hamd_progress_state`
+- `summary_draft_state`
+- `clinician_summary_draft`
+
+目前可進入醫師參考資料的模式如下：
+- `safety`
+  - 會更新 `red_flag_payload`
+  - 會更新 `latest_tag_payload`
+  - 會更新 `summary_draft_state`
+  - 會生成 `clinician_summary_draft`
+- `mode_1_void`
+  - 會更新 `latest_tag_payload`
+  - 會更新 `summary_draft_state`
+  - 會生成 `clinician_summary_draft`
+- `mode_2_soulmate`
+  - 會更新 `latest_tag_payload`
+  - 會更新 `summary_draft_state`
+  - 會生成 `clinician_summary_draft`
+- `mode_3_mission`
+  - 會更新 `latest_tag_payload`
+  - 會更新 `hamd_progress_state`
+  - 會更新 `summary_draft_state`
+  - 會生成 `clinician_summary_draft`
+- `mode_4_option`
+  - 會更新 `latest_tag_payload`
+  - 會更新 `summary_draft_state`
+  - 會生成 `clinician_summary_draft`
+- `mode_5_natural`
+  - 會更新 `latest_tag_payload`
+  - 會更新 `summary_draft_state`
+  - 會生成 `clinician_summary_draft`
+- `mode_6_clarify`
+  - 主要功能是寫入 `pending_question`
+  - 但該輪輸入在進 clarify 前，前段主流程已先更新 `latest_tag_payload`、`summary_draft_state`、`clinician_summary_draft`
+- `follow-up`
+  - follow-up 回合的病人輸入同樣先經過前段的 tag / summary 更新
+  - 收斂後會反映在 `summary_draft_state` 與 `clinician_summary_draft`
+
+目前不會直接交付的內容：
+- 原始全文逐字 transcript
+- 完整逐句引用版醫師報告
+
+目前醫師端較接近拿到的是「結構化摘要草稿」，而不是逐字對話全文。
+
+### 3.2 哪些模式會進入量表線索
+目前系統還沒有正式量表計分，也沒有完整 HAM-D 17 項打分器。
+目前能進入量表層的，是「HAM-D 線索狀態」而不是正式分數。
+
+目前最直接會進量表線索的模式：
+- `mode_3_mission`
+  - 這是目前唯一會明確經過 `HAM-D Progress Tracker` 的主路徑
+  - 會更新 `hamd_progress_state`
+  - 會把可觀察到的內容整理到固定維度集合，例如：
+    - `depressed_mood`
+    - `guilt`
+    - `work_interest`
+    - `retardation`
+    - `agitation`
+    - `somatic_anxiety`
+    - `insomnia`
+
+目前會間接影響量表線索的模式：
+- `mode_1_void`
+- `mode_2_soulmate`
+- `mode_4_option`
+- `mode_5_natural`
+- `mode_6_clarify`
+- `follow-up`
+
+這些模式本身不直接跑 `HAM-D Progress Tracker`，但它們會先累積：
+- `latest_tag_payload`
+- `summary_draft_state`
+- `clinician_summary_draft`
+
+因此它們目前比較像「先蒐集症狀線索與語氣線索」，再由 `mission` 路徑把內容整理進較接近量表的狀態。
+
+高風險模式與量表的關係：
+- `safety` 主要進的是風險與警示資料
+- 目前不直接轉成 HAM-D 分數
+- 但會進 `red_flag_payload`、`summary_draft_state`、`clinician_summary_draft`
+
+### 3.3 現在模式切換的機制
+目前模式切換不是單一 classifier 一次決定全部，而是依序經過：
+
+1. `Risk Detector`
+   - 先判斷是否命中高風險 red flag
+   - 若命中，直接走 `safety`
+   - 不再進一般 mode 分類
+
+2. `Tag Structurer` + `Summary Draft Builder`
+   - 若不是高風險，先把本輪輸入做四大標籤與 pre-summary 更新
+
+3. `Follow-up Gate`
+   - 若 `pending_question` 不為空，代表目前在補問鏈上
+   - 這時優先走 follow-up，而不是重新做一般模式分類
+
+4. `Follow-up Limit Gate`
+   - 若 `followup_turn_count = 2`，直接進 `Follow-up Finalizer`
+   - 若尚未到上限，進 `Follow-up Resolver`
+
+5. `Follow-up Output Classifier`
+   - 判斷 follow-up 回覆屬於：
+     - `followup_ask_more`
+     - `followup_answer_now`
+   - 若仍要補問，保留 `pending_question`
+   - 若可收斂，清空補問狀態
+
+6. `Intent Classifier`
+   - 只有在「不是高風險，且不在待補問狀態」時才會走到這裡
+   - 依這輪輸入分到：
+     - `mode_1_void`
+     - `mode_2_soulmate`
+     - `mode_3_mission`
+     - `mode_4_option`
+     - `mode_5_natural`
+     - `mode_6_clarify`
+
+7. `Set Active Mode`
+   - 每個 mode 會先把 `active_mode` 寫進 conversation state
+   - 然後才進各自的 LLM / retrieval 路徑
+
+這個切換機制的產品含義是：
+- 高風險永遠優先
+- 補問中的對話優先於重新分類
+- 一般 mode 分流只處理「非高風險、非 follow-up 鏈」的輸入
+- `mission` 與 `option` 可用 retrieval
+- `natural` 刻意不接 retrieval，避免陪伴感被檢索感破壞
+
 ### 4. RAG 成本控制
 目前不是每條路都做 retrieval。
 
