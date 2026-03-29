@@ -94,7 +94,7 @@
 目前已恢復的能力：
 - 一般正常回合會產生四大標籤的簡化 JSON
 - 高風險 safety 路徑也會把結果寫進 `latest_tag_payload`
-- `mission` 路徑會保存一份簡化的 HAM-D 進度狀態
+- 一般非高風險回合都可更新一份簡化的 HAM-D 進度狀態
 - `Mission Guide` 已能讀取 `hamd_progress_state`
 - tag payload 已開始區分 `route_type / source_mode / followup_status`
 - 已開始把 tag / risk / HAM-D 狀態收斂到 `summary_draft_state`
@@ -155,7 +155,7 @@
 - `latest_tag_payload` 已回到 conversation state
 - 已有 `Tag Structurer`
 - `hamd_progress_state` 已回到 conversation state
-- `mission` 路徑已有 `HAM-D Progress Tracker`
+- 一般非高風險回合皆可更新 `HAM-D Progress Tracker`
 - safety 路徑也已進入結構化資料狀態
 - tag payload 已開始帶 `route_type / source_mode / followup_status`
 - HAM-D 進度已限制在固定維度集合上
@@ -333,20 +333,8 @@ AI Companion 的定位不是一般聊天機器人，而是：
 目前系統還沒有正式量表計分，也沒有完整 HAM-D 17 項打分器。
 目前能進入量表層的，是「HAM-D 線索狀態」而不是正式分數。
 
-目前最直接會進量表線索的模式：
+目前會直接進量表線索的模式：
 - `mode_3_mission`
-  - 這是目前唯一會明確經過 `HAM-D Progress Tracker` 的主路徑
-  - 會更新 `hamd_progress_state`
-  - 會把可觀察到的內容整理到固定維度集合，例如：
-    - `depressed_mood`
-    - `guilt`
-    - `work_interest`
-    - `retardation`
-    - `agitation`
-    - `somatic_anxiety`
-    - `insomnia`
-
-目前會間接影響量表線索的模式：
 - `mode_1_void`
 - `mode_2_soulmate`
 - `mode_4_option`
@@ -354,12 +342,16 @@ AI Companion 的定位不是一般聊天機器人，而是：
 - `mode_6_clarify`
 - `follow-up`
 
-這些模式本身不直接跑 `HAM-D Progress Tracker`，但它們會先累積：
-- `latest_tag_payload`
-- `summary_draft_state`
-- `clinician_summary_draft`
+上述模式都會在一般非高風險路徑經過 `HAM-D Progress Tracker`，因此只要這輪輸入裡有可映射的症狀資訊，就會更新 `hamd_progress_state`。
 
-因此它們目前比較像「先蒐集症狀線索與語氣線索」，再由 `mission` 路徑把內容整理進較接近量表的狀態。
+其中：
+- `mission`
+  - 仍然是最強的量表整理路徑
+  - 會在 retrieval 與任務導向引導下，更主動推進維度
+- `option / natural / clarify / follow-up`
+  - 不會直接用量表口吻發問
+  - 但若病人輸入中已經包含量表相關線索，仍會被寫入 `hamd_progress_state`
+  - 這些模式的定位是「降低直接量表感，但保留量表資訊累積」
 
 高風險模式與量表的關係：
 - `safety` 主要進的是風險與警示資料
@@ -412,6 +404,7 @@ AI Companion 的定位不是一般聊天機器人，而是：
 - 一般 mode 分流只處理「非高風險、非 follow-up 鏈」的輸入
 - `mission` 與 `option` 可用 retrieval
 - `natural` 刻意不接 retrieval，避免陪伴感被檢索感破壞
+- `option / natural / clarify / follow-up` 雖然互動較自然，但仍可把量表線索寫進 `hamd_progress_state`
 
 ### 4. RAG 成本控制
 目前不是每條路都做 retrieval。
