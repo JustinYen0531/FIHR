@@ -233,16 +233,21 @@
 - Bundle builder 已新增 `DocumentReference`
 - Bundle builder 已新增 `Provenance`
 - 現在可把臨床摘要檔案化，並同時保留 AI 生成 / 病人審閱狀態的治理軌跡
+- 已新增 `app/fhirDeliveryServer.js`
+- 已新增 `app/fhirDeliveryServer.test.js`
+- 已可用 `POST /api/fhir/bundle` 對 internal state 做 dry-run delivery
+- 若設定 `FHIR_SERVER_URL`，已可把 transaction Bundle 送往外部 FHIR endpoint
 
 尚未達成：
 - 還沒有真正的病患按鈕式審閱 / 編輯 / 授權 UI
-- 還沒有實際送往 FHIR server / HIS / EHR
 - 還沒有 `preliminary -> final` 的授權後狀態轉換
 - 還沒有真正串接外部 TW Core validator / IG package 驗證器
 - 還沒有真正可成立的 `Consent` resource，因目前缺少 UI / 事件層授權證據
+- 還沒有 production-ready 的 retry / audit log / credential 管理
+- 還沒有真正對接醫院 HIS / EHR 的 adapter
 
 結論：
-目前 `P3` 已進入「交付層第 3 步」的第一版，已從單純 Bundle 進一步補上治理資源，但 `Consent` 仍需等病人端真實授權流程落地。
+目前 `P3` 已進入「交付層第 4 步」的第一版，已經有可本地啟動的 delivery API，並支援可選的外部 FHIR transaction 寫入。
 
 ### P3 交付層四步路線
 1. Bundle 內容品質升級
@@ -264,7 +269,7 @@
 - 視需要補 `DocumentReference`
 
 4. 真正交付層
-目標：
+目前狀態：`已開始並完成第一版`
 - backend API
 - transaction Bundle endpoint
 - FHIR server / HIS / EHR 寫入
