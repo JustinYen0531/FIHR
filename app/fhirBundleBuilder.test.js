@@ -83,6 +83,8 @@ function testBuildsBundleForValidInput() {
   assert.ok(result.resource_index.Observation.length >= 1, 'bundle should include observations');
   assert.ok(result.resource_index.Composition.length === 1, 'bundle should include one Composition');
   assert.deepStrictEqual(result.blocking_reasons, []);
+  assert.ok(result.validation_report, 'validation_report should exist');
+  assert.strictEqual(result.validation_report.valid, true);
 }
 
 function testBlocksWithoutClinicianSummary() {
@@ -91,6 +93,7 @@ function testBlocksWithoutClinicianSummary() {
   const result = buildSessionExportBundle(input);
   assert.strictEqual(result.bundle_json, null);
   assert.ok(result.blocking_reasons.includes('clinician_summary_draft is missing.'));
+  assert.strictEqual(result.validation_report, null);
 }
 
 function testBlocksWhenSharingNotAllowed() {
@@ -142,6 +145,14 @@ function testClinicalContentIsEnriched() {
   assert.ok(observation.resource.extension.some((extension) => extension.url.indexOf('patient-review-status') !== -1));
 }
 
+function testValidationReportHasExpectedShape() {
+  const result = buildSessionExportBundle(createValidInput());
+  assert.ok(typeof result.validation_report.issue_count === 'number');
+  assert.ok(typeof result.validation_report.errors === 'number');
+  assert.ok(typeof result.validation_report.warnings === 'number');
+  assert.ok(Array.isArray(result.validation_report.issues));
+}
+
 function run() {
   testBuildsBundleForValidInput();
   testBlocksWithoutClinicianSummary();
@@ -149,6 +160,7 @@ function run() {
   testBlocksWhenReadinessIsBlocked();
   testReferencesAreConnected();
   testClinicalContentIsEnriched();
+  testValidationReportHasExpectedShape();
   console.log('FHIR bundle builder tests passed.');
 }
 

@@ -15,6 +15,7 @@ function main() {
     console.log('Bundle build succeeded.');
     console.log('Output written to:', outputPath);
     console.log(JSON.stringify(result.resource_index, null, 2));
+    console.log('Validation report:', JSON.stringify(result.validation_report, null, 2));
     return;
   }
 
@@ -22,6 +23,7 @@ function main() {
   console.log('Output written to:', outputPath);
   console.log('Blocking reasons:', JSON.stringify(result.blocking_reasons, null, 2));
   console.log('Validation errors:', JSON.stringify(result.validation_errors, null, 2));
+  console.log('Validation report:', JSON.stringify(result.validation_report, null, 2));
   process.exitCode = 1;
 }
 

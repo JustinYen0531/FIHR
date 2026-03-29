@@ -1,0 +1,143 @@
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) {
+    module.exports = factory();
+  } else {
+    root.FhirBundleValidator = factory();
+  }
+})(typeof self !== 'undefined' ? self : this, function () {
+  const REQUIRED_PROFILES = {
+    Patient: 'https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/Patient-twcore',
+    Encounter: 'https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/Encounter-twcore',
+    QuestionnaireResponse: 'https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/QuestionnaireResponse-twcore',
+    Observation: 'https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/Observation-screening-assessment-twcore',
+    Composition: 'https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/Composition-twcore'
+  };
+
+  function getEntries(bundle) {
+    return bundle && Array.isArray(bundle.entry) ? bundle.entry : [];
+  }
+
+  function pushIssue(report, severity, code, message, location) {
+    report.issues.push({
+      severity: severity,
+      code: code,
+      message: message,
+      location: location || null
+    });
+  }
+
+  function validateMetaProfile(report, resource, index) {
+    const expectedProfile = REQUIRED_PROFILES[resource.resourceType];
+    const profiles = resource.meta && Array.isArray(resource.meta.profile) ? resource.meta.profile : [];
+    if (expectedProfile && profiles.indexOf(expectedProfile) === -1) {
+      pushIssue(report, 'error', 'missing_profile', resource.resourceType + ' is missing expected TW Core profile.', 'entry[' + index + '].resource.meta.profile');
+    }
+  }
+
+  function validatePatient(report, resource, index) {
+    if (!Array.isArray(resource.identifier) || !resource.identifier.length) {
+      pushIssue(report, 'error', 'patient_identifier_missing', 'Patient.identifier is required.', 'entry[' + index + '].resource.identifier');
+    }
+    if (!Array.isArray(resource.name) || !resource.name.length) {
+      pushIssue(report, 'warning', 'patient_name_missing', 'Patient.name is recommended for clinical readability.', 'entry[' + index + '].resource.name');
+    }
+  }
+
+  function validateEncounter(report, resource, index) {
+    if (!resource.subject || !resource.subject.reference) {
+      pushIssue(report, 'error', 'encounter_subject_missing', 'Encounter.subject.reference is required.', 'entry[' + index + '].resource.subject.reference');
+    }
+    if (!resource.class || !resource.class.code) {
+      pushIssue(report, 'error', 'encounter_class_missing', 'Encounter.class.code is required.', 'entry[' + index + '].resource.class.code');
+    }
+  }
+
+  function validateQuestionnaireResponse(report, resource, index) {
+    if (!resource.subject || !resource.subject.reference) {
+      pushIssue(report, 'error', 'questionnaire_subject_missing', 'QuestionnaireResponse.subject.reference is required.', 'entry[' + index + '].resource.subject.reference');
+    }
+    if (!resource.encounter || !resource.encounter.reference) {
+      pushIssue(report, 'warning', 'questionnaire_encounter_missing', 'QuestionnaireResponse.encounter.reference is recommended.', 'entry[' + index + '].resource.encounter.reference');
+    }
+    if (!Array.isArray(resource.item) || !resource.item.length) {
+      pushIssue(report, 'error', 'questionnaire_items_missing', 'QuestionnaireResponse.item should contain at least one item.', 'entry[' + index + '].resource.item');
+    }
+  }
+
+  function validateObservation(report, resource, index) {
+    if (!resource.subject || !resource.subject.reference) {
+      pushIssue(report, 'error', 'observation_subject_missing', 'Observation.subject.reference is required.', 'entry[' + index + '].resource.subject.reference');
+    }
+    if (!resource.encounter || !resource.encounter.reference) {
+      pushIssue(report, 'warning', 'observation_encounter_missing', 'Observation.encounter.reference is recommended.', 'entry[' + index + '].resource.encounter.reference');
+    }
+    if (!resource.code || !Array.isArray(resource.code.coding) || !resource.code.coding.length) {
+      pushIssue(report, 'error', 'observation_code_missing', 'Observation.code.coding is required.', 'entry[' + index + '].resource.code.coding');
+    }
+    if (!Array.isArray(resource.category) || !resource.category.length) {
+      pushIssue(report, 'warning', 'observation_category_missing', 'Observation.category is recommended for screening assessment.', 'entry[' + index + '].resource.category');
+    }
+  }
+
+  function validateComposition(report, resource, index) {
+    if (!resource.subject || !resource.subject.reference) {
+      pushIssue(report, 'error', 'composition_subject_missing', 'Composition.subject.reference is required.', 'entry[' + index + '].resource.subject.reference');
+    }
+    if (!resource.encounter || !resource.encounter.reference) {
+      pushIssue(report, 'warning', 'composition_encounter_missing', 'Composition.encounter.reference is recommended.', 'entry[' + index + '].resource.encounter.reference');
+    }
+    if (!Array.isArray(resource.section) || !resource.section.length) {
+      pushIssue(report, 'error', 'composition_sections_missing', 'Composition.section should contain at least one section.', 'entry[' + index + '].resource.section');
+    }
+    if (!resource.title) {
+      pushIssue(report, 'warning', 'composition_title_missing', 'Composition.title is recommended.', 'entry[' + index + '].resource.title');
+    }
+  }
+
+  function validateBundle(bundle) {
+    const report = {
+      valid: true,
+      issue_count: 0,
+      errors: 0,
+      warnings: 0,
+      issues: []
+    };
+
+    const entries = getEntries(bundle);
+
+    if (!bundle || bundle.resourceType !== 'Bundle') {
+      pushIssue(report, 'error', 'bundle_type_invalid', 'Top-level resourceType must be Bundle.', 'bundle.resourceType');
+    }
+
+    if (!bundle || bundle.type !== 'transaction') {
+      pushIssue(report, 'error', 'bundle_transaction_required', 'Bundle.type must be transaction.', 'bundle.type');
+    }
+
+    if (!entries.length) {
+      pushIssue(report, 'error', 'bundle_entries_missing', 'Bundle.entry must contain resources.', 'bundle.entry');
+    }
+
+    entries.forEach(function (entry, index) {
+      const resource = entry.resource || {};
+      validateMetaProfile(report, resource, index);
+
+      if (resource.resourceType === 'Patient') validatePatient(report, resource, index);
+      if (resource.resourceType === 'Encounter') validateEncounter(report, resource, index);
+      if (resource.resourceType === 'QuestionnaireResponse') validateQuestionnaireResponse(report, resource, index);
+      if (resource.resourceType === 'Observation') validateObservation(report, resource, index);
+      if (resource.resourceType === 'Composition') validateComposition(report, resource, index);
+    });
+
+    report.errors = report.issues.filter(function (issue) { return issue.severity === 'error'; }).length;
+    report.warnings = report.issues.filter(function (issue) { return issue.severity === 'warning'; }).length;
+    report.issue_count = report.issues.length;
+    report.valid = report.errors === 0;
+
+    return report;
+  }
+
+  return {
+    validateBundle: validateBundle,
+    REQUIRED_PROFILES: REQUIRED_PROFILES
+  };
+});

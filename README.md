@@ -19,3 +19,8 @@ node app\buildBundleDemo.js
 輸入範例在 [sampleSessionExport.json](C:/Users/閻星澄/Desktop/FHIR-main/FHIR-main/app/sampleSessionExport.json)，輸出會寫到：
 
 `app\sampleBundleOutput.json`
+
+目前輸出也會包含：
+- `validation_report`
+- `validation_errors`
+- `blocking_reasons`

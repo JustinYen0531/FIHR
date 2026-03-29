@@ -223,16 +223,19 @@
 - 現在已能把「病人審閱中 / 可進同意 / 仍需修正 / 暫不分享」整理成結構化狀態
 - 現在已能把 FHIR draft 再整理成 backend handoff 前的 readiness 狀態
 - 已新增 `app/fhirBundleBuilder.js`
+- 已新增 `app/fhirBundleValidator.js`
 - 已可把 internal state 轉成正式 transaction `Bundle`
 - 第一版 `Bundle` 已包含 `Patient / Encounter / QuestionnaireResponse / Observation / Composition`
 - Resource 內容已開始區分 AI generated 與 patient review status
 - `Composition.section`、`QuestionnaireResponse`、`Observation.derivedFrom` 已比 MVP 更接近正式臨床交付內容
+- 已新增 `validation_report`
+- Bundle builder 現在會同步輸出 FHIR / TW Core 規則檢查結果
 
 尚未達成：
 - 還沒有真正的病患按鈕式審閱 / 編輯 / 授權 UI
-- 還沒有正式的 FHIR R4 resource payload 驗證
 - 還沒有實際送往 FHIR server / HIS / EHR
 - 還沒有 `preliminary -> final` 的授權後狀態轉換
+- 還沒有真正串接外部 TW Core validator / IG package 驗證器
 
 結論：
 目前 `P3` 已進入「交付層第 1 步」，已從映射草稿進到可產生正式 transaction Bundle 的階段，但仍未完成 validator、Provenance 與真實 server 寫入。
@@ -245,7 +248,7 @@
 - 強化 `Observation` 串接與 AI / patient review 狀態標記
 
 2. 正式驗證層
-目標：
+目前狀態：`已開始並完成第一版`
 - FHIR R4 / TW Core profile validation
 - mapping error report
 - export 前 validation summary

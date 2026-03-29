@@ -1,10 +1,10 @@
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory();
+    module.exports = factory(require('./fhirBundleValidator'));
   } else {
-    root.FhirBundleBuilder = factory();
+    root.FhirBundleBuilder = factory(root.FhirBundleValidator);
   }
-})(typeof self !== 'undefined' ? self : this, function () {
+})(typeof self !== 'undefined' ? self : this, function (validatorModule) {
   const TW_CORE_PROFILES = {
     patient: 'https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/Patient-twcore',
     encounter: 'https://twcore.mohw.gov.tw/ig/twcore/StructureDefinition/Encounter-twcore',
@@ -512,7 +512,8 @@
         bundle_json: null,
         resource_index: {},
         validation_errors: validationErrors,
-        blocking_reasons: blockingReasons
+        blocking_reasons: blockingReasons,
+        validation_report: null
       };
     }
 
@@ -571,12 +572,20 @@
 
     const bundle = buildBundle(entries);
     basicValidation(bundle, input, validationErrors);
+    const validationReport = validatorModule && typeof validatorModule.validateBundle === 'function'
+      ? validatorModule.validateBundle(bundle)
+      : null;
+
+    if (validationReport && !validationReport.valid) {
+      validationErrors.push('FHIR/TW Core validation report contains errors.');
+    }
 
     return {
       bundle_json: bundle,
       resource_index: buildResourceIndex(entries),
       validation_errors: validationErrors,
-      blocking_reasons: blockingReasons
+      blocking_reasons: blockingReasons,
+      validation_report: validationReport
     };
   }
 
