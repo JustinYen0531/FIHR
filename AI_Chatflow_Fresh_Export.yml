@@ -91,6 +91,22 @@ workflow:
     - clinician_summary_draft
     value: ''
     value_type: string
+  - id: routing-mode-override-var
+    name: routing_mode_override
+    description: Persisted manual routing mode override; empty means auto routing
+    selector:
+    - conversation
+    - routing_mode_override
+    value: ''
+    value_type: string
+  - id: command-feedback-var
+    name: command_feedback
+    description: Short confirmation text for command-mode switches
+    selector:
+    - conversation
+    - command_feedback
+    value: ''
+    value_type: string
   environment_variables: []
   features:
     file_upload:
@@ -144,10 +160,82 @@ workflow:
     - data:
         sourceType: start
         targetType: question-classifier
-      id: start-risk-detector
+      id: start-command-detector
       source: start
       sourceHandle: source
+      target: command-detector
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: question-classifier
+        targetType: question-classifier
+      id: command-none-risk-detector
+      source: command-detector
+      sourceHandle: cmd_none
       target: risk-detector
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: question-classifier
+        targetType: assigner
+      id: command-auto-set
+      source: command-detector
+      sourceHandle: cmd_auto
+      target: set-command-auto
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: question-classifier
+        targetType: assigner
+      id: command-void-set
+      source: command-detector
+      sourceHandle: cmd_void
+      target: set-command-void
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: question-classifier
+        targetType: assigner
+      id: command-soulmate-set
+      source: command-detector
+      sourceHandle: cmd_soulmate
+      target: set-command-soulmate
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: question-classifier
+        targetType: assigner
+      id: command-mission-set
+      source: command-detector
+      sourceHandle: cmd_mission
+      target: set-command-mission
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: question-classifier
+        targetType: assigner
+      id: command-option-set
+      source: command-detector
+      sourceHandle: cmd_option
+      target: set-command-option
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: question-classifier
+        targetType: assigner
+      id: command-natural-set
+      source: command-detector
+      sourceHandle: cmd_natural
+      target: set-command-natural
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: question-classifier
+        targetType: assigner
+      id: command-clarify-set
+      source: command-detector
+      sourceHandle: cmd_clarify
+      target: set-command-clarify
       targetHandle: target
       type: custom
     - data:
@@ -287,11 +375,83 @@ workflow:
       type: custom
     - data:
         sourceType: if-else
-        targetType: question-classifier
-      id: gate-classifier
+        targetType: if-else
+      id: gate-override
       source: followup-gate
       sourceHandle: 'false'
+      target: override-gate
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: if-else
+        targetType: question-classifier
+      id: override-gate-classifier
+      source: override-gate
+      sourceHandle: 'false'
       target: classifier
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: if-else
+        targetType: question-classifier
+      id: override-gate-router
+      source: override-gate
+      sourceHandle: 'true'
+      target: override-router
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: question-classifier
+        targetType: assigner
+      id: override-void
+      source: override-router
+      sourceHandle: mode_1_void
+      target: set-mode-void
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: question-classifier
+        targetType: assigner
+      id: override-soulmate
+      source: override-router
+      sourceHandle: mode_2_soulmate
+      target: set-mode-soulmate
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: question-classifier
+        targetType: assigner
+      id: override-mission
+      source: override-router
+      sourceHandle: mode_3_mission
+      target: set-mode-mission
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: question-classifier
+        targetType: assigner
+      id: override-option
+      source: override-router
+      sourceHandle: mode_4_option
+      target: set-mode-option
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: question-classifier
+        targetType: assigner
+      id: override-natural
+      source: override-router
+      sourceHandle: mode_5_natural
+      target: set-mode-natural
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: question-classifier
+        targetType: assigner
+      id: override-clarify
+      source: override-router
+      sourceHandle: mode_6_clarify
+      target: set-mode-clarify
       targetHandle: target
       type: custom
     - data:
@@ -466,6 +626,69 @@ workflow:
       targetHandle: target
       type: custom
     - data:
+        sourceType: assigner
+        targetType: answer
+      id: command-answer-auto
+      source: set-command-auto
+      sourceHandle: source
+      target: answer-command
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: assigner
+        targetType: answer
+      id: command-answer-void
+      source: set-command-void
+      sourceHandle: source
+      target: answer-command
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: assigner
+        targetType: answer
+      id: command-answer-soulmate
+      source: set-command-soulmate
+      sourceHandle: source
+      target: answer-command
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: assigner
+        targetType: answer
+      id: command-answer-mission
+      source: set-command-mission
+      sourceHandle: source
+      target: answer-command
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: assigner
+        targetType: answer
+      id: command-answer-option
+      source: set-command-option
+      sourceHandle: source
+      target: answer-command
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: assigner
+        targetType: answer
+      id: command-answer-natural
+      source: set-command-natural
+      sourceHandle: source
+      target: answer-command
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: assigner
+        targetType: answer
+      id: command-answer-clarify
+      source: set-command-clarify
+      sourceHandle: source
+      target: answer-command
+      targetHandle: target
+      type: custom
+    - data:
         sourceType: knowledge-retrieval
         targetType: llm
       id: retrieval-option-llm
@@ -593,6 +816,52 @@ workflow:
         y: 420
       positionAbsolute:
         x: 80
+        y: 420
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        classes:
+        - id: cmd_auto
+          name: Auto
+        - id: cmd_void
+          name: Void
+        - id: cmd_soulmate
+          name: Soulmate
+        - id: cmd_mission
+          name: Mission
+        - id: cmd_option
+          name: Option
+        - id: cmd_natural
+          name: Natural
+        - id: cmd_clarify
+          name: Clarify
+        - id: cmd_none
+          name: None
+        instruction: |
+          你要判斷使用者這一輪是否在輸入「模式切換指令」。
+          只有在使用者明確是在下指令時，才輸出對應類別。
+          可接受的指令例子包含：
+          auto, /auto, soulmate, /soulmate, mission, /mission, option, /option, natural, /natural, void, /void, clarify, /clarify。
+          如果只是正常對話中提到這些字，不算指令，請輸出 cmd_none。
+          只輸出一個類別代號。
+        model:
+          completion_params:
+            temperature: 0
+          mode: chat
+          name: ''
+          provider: ''
+        query_variable_selector:
+        - sys
+        - query
+        title: Command Detector
+        type: question-classifier
+      id: command-detector
+      position:
+        x: 180
+        y: 420
+      positionAbsolute:
+        x: 180
         y: 420
       sourcePosition: right
       targetPosition: left
@@ -1032,6 +1301,363 @@ workflow:
         items:
         - input_type: constant
           operation: overwrite
+          value: ''
+          variable_selector:
+          - conversation
+          - routing_mode_override
+        - input_type: constant
+          operation: overwrite
+          value: ''
+          variable_selector:
+          - conversation
+          - active_mode
+        - input_type: constant
+          operation: overwrite
+          value: ''
+          variable_selector:
+          - conversation
+          - pending_question
+        - input_type: constant
+          operation: overwrite
+          value: '0'
+          variable_selector:
+          - conversation
+          - followup_turn_count
+        - input_type: constant
+          operation: overwrite
+          value: resolved
+          variable_selector:
+          - conversation
+          - followup_status
+        - input_type: constant
+          operation: overwrite
+          value: 已切回 auto 模式，之後會重新依照使用者語氣與內容自動分流。
+          variable_selector:
+          - conversation
+          - command_feedback
+        title: Set Command Auto
+        type: assigner
+        version: '2'
+      id: set-command-auto
+      position:
+        x: 720
+        y: 980
+      positionAbsolute:
+        x: 720
+        y: 980
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        items:
+        - input_type: constant
+          operation: overwrite
+          value: mode_1_void
+          variable_selector:
+          - conversation
+          - routing_mode_override
+        - input_type: constant
+          operation: overwrite
+          value: mode_1_void
+          variable_selector:
+          - conversation
+          - active_mode
+        - input_type: constant
+          operation: overwrite
+          value: ''
+          variable_selector:
+          - conversation
+          - pending_question
+        - input_type: constant
+          operation: overwrite
+          value: '0'
+          variable_selector:
+          - conversation
+          - followup_turn_count
+        - input_type: constant
+          operation: overwrite
+          value: resolved
+          variable_selector:
+          - conversation
+          - followup_status
+        - input_type: constant
+          operation: overwrite
+          value: 已切換到 void 模式，之後會優先維持樹洞式接住，直到你輸入其他模式指令或 auto。
+          variable_selector:
+          - conversation
+          - command_feedback
+        title: Set Command Void
+        type: assigner
+        version: '2'
+      id: set-command-void
+      position:
+        x: 940
+        y: 980
+      positionAbsolute:
+        x: 940
+        y: 980
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        items:
+        - input_type: constant
+          operation: overwrite
+          value: mode_2_soulmate
+          variable_selector:
+          - conversation
+          - routing_mode_override
+        - input_type: constant
+          operation: overwrite
+          value: mode_2_soulmate
+          variable_selector:
+          - conversation
+          - active_mode
+        - input_type: constant
+          operation: overwrite
+          value: ''
+          variable_selector:
+          - conversation
+          - pending_question
+        - input_type: constant
+          operation: overwrite
+          value: '0'
+          variable_selector:
+          - conversation
+          - followup_turn_count
+        - input_type: constant
+          operation: overwrite
+          value: resolved
+          variable_selector:
+          - conversation
+          - followup_status
+        - input_type: constant
+          operation: overwrite
+          value: 已切換到 soulmate 模式，之後會優先維持陪伴式互動，直到你輸入其他模式指令或 auto。
+          variable_selector:
+          - conversation
+          - command_feedback
+        title: Set Command Soulmate
+        type: assigner
+        version: '2'
+      id: set-command-soulmate
+      position:
+        x: 1160
+        y: 980
+      positionAbsolute:
+        x: 1160
+        y: 980
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        items:
+        - input_type: constant
+          operation: overwrite
+          value: mode_3_mission
+          variable_selector:
+          - conversation
+          - routing_mode_override
+        - input_type: constant
+          operation: overwrite
+          value: mode_3_mission
+          variable_selector:
+          - conversation
+          - active_mode
+        - input_type: constant
+          operation: overwrite
+          value: ''
+          variable_selector:
+          - conversation
+          - pending_question
+        - input_type: constant
+          operation: overwrite
+          value: '0'
+          variable_selector:
+          - conversation
+          - followup_turn_count
+        - input_type: constant
+          operation: overwrite
+          value: resolved
+          variable_selector:
+          - conversation
+          - followup_status
+        - input_type: constant
+          operation: overwrite
+          value: 已切換到 mission 模式，之後會優先維持任務整理與診前引導，直到你輸入其他模式指令或 auto。
+          variable_selector:
+          - conversation
+          - command_feedback
+        title: Set Command Mission
+        type: assigner
+        version: '2'
+      id: set-command-mission
+      position:
+        x: 1380
+        y: 980
+      positionAbsolute:
+        x: 1380
+        y: 980
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        items:
+        - input_type: constant
+          operation: overwrite
+          value: mode_4_option
+          variable_selector:
+          - conversation
+          - routing_mode_override
+        - input_type: constant
+          operation: overwrite
+          value: mode_4_option
+          variable_selector:
+          - conversation
+          - active_mode
+        - input_type: constant
+          operation: overwrite
+          value: ''
+          variable_selector:
+          - conversation
+          - pending_question
+        - input_type: constant
+          operation: overwrite
+          value: '0'
+          variable_selector:
+          - conversation
+          - followup_turn_count
+        - input_type: constant
+          operation: overwrite
+          value: resolved
+          variable_selector:
+          - conversation
+          - followup_status
+        - input_type: constant
+          operation: overwrite
+          value: 已切換到 option 模式，之後會優先用低負擔選項式互動，同時保留量表線索，直到你輸入其他模式指令或 auto。
+          variable_selector:
+          - conversation
+          - command_feedback
+        title: Set Command Option
+        type: assigner
+        version: '2'
+      id: set-command-option
+      position:
+        x: 1600
+        y: 980
+      positionAbsolute:
+        x: 1600
+        y: 980
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        items:
+        - input_type: constant
+          operation: overwrite
+          value: mode_5_natural
+          variable_selector:
+          - conversation
+          - routing_mode_override
+        - input_type: constant
+          operation: overwrite
+          value: mode_5_natural
+          variable_selector:
+          - conversation
+          - active_mode
+        - input_type: constant
+          operation: overwrite
+          value: ''
+          variable_selector:
+          - conversation
+          - pending_question
+        - input_type: constant
+          operation: overwrite
+          value: '0'
+          variable_selector:
+          - conversation
+          - followup_turn_count
+        - input_type: constant
+          operation: overwrite
+          value: resolved
+          variable_selector:
+          - conversation
+          - followup_status
+        - input_type: constant
+          operation: overwrite
+          value: 已切換到 natural 模式，之後會優先用自然互動蒐集線索，直到你輸入其他模式指令或 auto。
+          variable_selector:
+          - conversation
+          - command_feedback
+        title: Set Command Natural
+        type: assigner
+        version: '2'
+      id: set-command-natural
+      position:
+        x: 1820
+        y: 980
+      positionAbsolute:
+        x: 1820
+        y: 980
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        items:
+        - input_type: constant
+          operation: overwrite
+          value: mode_6_clarify
+          variable_selector:
+          - conversation
+          - routing_mode_override
+        - input_type: constant
+          operation: overwrite
+          value: mode_6_clarify
+          variable_selector:
+          - conversation
+          - active_mode
+        - input_type: constant
+          operation: overwrite
+          value: ''
+          variable_selector:
+          - conversation
+          - pending_question
+        - input_type: constant
+          operation: overwrite
+          value: '0'
+          variable_selector:
+          - conversation
+          - followup_turn_count
+        - input_type: constant
+          operation: overwrite
+          value: resolved
+          variable_selector:
+          - conversation
+          - followup_status
+        - input_type: constant
+          operation: overwrite
+          value: 已切換到 clarify 模式，之後會優先用最小補問來釐清資訊，直到你輸入其他模式指令或 auto。
+          variable_selector:
+          - conversation
+          - command_feedback
+        title: Set Command Clarify
+        type: assigner
+        version: '2'
+      id: set-command-clarify
+      position:
+        x: 2040
+        y: 980
+      positionAbsolute:
+        x: 2040
+        y: 980
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        items:
+        - input_type: constant
+          operation: overwrite
           value: mode_1_void
           variable_selector:
           - conversation
@@ -1156,6 +1782,26 @@ workflow:
       type: custom
     - data:
         cases:
+        - case_id: override_active
+          conditions:
+          - comparison_operator: is not empty
+            variable_selector:
+            - conversation
+            - routing_mode_override
+        title: Override Gate
+        type: if-else
+      id: override-gate
+      position:
+        x: 500
+        y: 520
+      positionAbsolute:
+        x: 500
+        y: 520
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        cases:
         - case_id: pending_not_empty
           conditions:
           - comparison_operator: is not empty
@@ -1236,6 +1882,44 @@ workflow:
       positionAbsolute:
         x: 620
         y: 280
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        classes:
+        - id: mode_1_void
+          name: Void Box
+        - id: mode_2_soulmate
+          name: Soul Mate
+        - id: mode_3_mission
+          name: Mission Guide
+        - id: mode_4_option
+          name: Option Selector
+        - id: mode_5_natural
+          name: Smart Hunter
+        - id: mode_6_clarify
+          name: Clarify
+        instruction: |
+          你要根據 `routing_mode_override` 的值，輸出對應的 mode 類別。
+          只輸出一個類別代號，不要解釋。
+        model:
+          completion_params:
+            temperature: 0
+          mode: chat
+          name: ''
+          provider: ''
+        query_variable_selector:
+        - conversation
+        - routing_mode_override
+        title: Override Router
+        type: question-classifier
+      id: override-router
+      position:
+        x: 700
+        y: 520
+      positionAbsolute:
+        x: 700
+        y: 520
       sourcePosition: right
       targetPosition: left
       type: custom
@@ -1960,6 +2644,21 @@ workflow:
       positionAbsolute:
         x: 1820
         y: 840
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+    - data:
+        answer: '{{#conversation.command_feedback#}}'
+        title: Command Answer
+        type: answer
+        variables: []
+      id: answer-command
+      position:
+        x: 2300
+        y: 980
+      positionAbsolute:
+        x: 2300
+        y: 980
       sourcePosition: right
       targetPosition: left
       type: custom

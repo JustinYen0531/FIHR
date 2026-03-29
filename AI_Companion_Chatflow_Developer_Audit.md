@@ -282,6 +282,30 @@ AI Companion 的定位不是一般聊天機器人，而是：
 - 沒有自動模式降級邏輯
 - `mission` 還沒有完整的維度進度控制
 
+### 3.0 手動指令模式覆寫
+目前已新增手動模式覆寫機制：
+- `routing_mode_override`
+- `command_feedback`
+- `Command Detector`
+- `Override Gate`
+- `Override Router`
+
+目前設計：
+- 使用者若明確輸入模式指令，例如 `soulmate`、`mission`、`option`、`natural`、`void`、`clarify`，會先被 `Command Detector` 辨識成切換指令。
+- 一旦切換成功，`routing_mode_override` 會被寫成對應 mode。
+- 後續回合只要沒有輸入新的模式指令，系統就會優先使用這個 override mode，而不是重新做語氣意圖分類。
+- 若使用者輸入 `auto` 或 `/auto`，就會清空 `routing_mode_override`，回到自動分類。
+- 指令切換時會同步清空 `pending_question` 與 follow-up 狀態，避免舊補問鏈殘留。
+
+目前已達成：
+- 手動模式切換已高於一般意圖分類
+- 使用者可明確鎖定 `soulmate / mission / option / natural / void / clarify`
+- `auto` 可回到自動分流
+
+目前尚未達成：
+- 還沒有前端按鈕式切換 UI
+- 還沒有更嚴格的指令語法白名單
+
 ### 3.1 哪些模式會進入醫師參考資料
 目前不是把所有原始對話逐字送給醫師，而是先把各模式蒐集到的內容收斂成：
 - `latest_tag_payload`
@@ -361,31 +385,42 @@ AI Companion 的定位不是一般聊天機器人，而是：
 ### 3.3 現在模式切換的機制
 目前模式切換不是單一 classifier 一次決定全部，而是依序經過：
 
-1. `Risk Detector`
+1. `Command Detector`
+   - 先判斷使用者這一輪是否明確在下模式切換指令
+   - 若是模式指令，直接更新 `routing_mode_override`
+   - 若是 `auto`，清空 `routing_mode_override`
+   - 這一輪會直接回覆切換確認，不再進一般聊天處理
+
+2. `Risk Detector`
    - 先判斷是否命中高風險 red flag
    - 若命中，直接走 `safety`
    - 不再進一般 mode 分類
 
-2. `Tag Structurer` + `Summary Draft Builder`
+3. `Tag Structurer` + `Summary Draft Builder`
    - 若不是高風險，先把本輪輸入做四大標籤與 pre-summary 更新
 
-3. `Follow-up Gate`
+4. `Follow-up Gate`
    - 若 `pending_question` 不為空，代表目前在補問鏈上
    - 這時優先走 follow-up，而不是重新做一般模式分類
 
-4. `Follow-up Limit Gate`
+5. `Follow-up Limit Gate`
    - 若 `followup_turn_count = 2`，直接進 `Follow-up Finalizer`
    - 若尚未到上限，進 `Follow-up Resolver`
 
-5. `Follow-up Output Classifier`
+6. `Override Gate`
+   - 若 `routing_mode_override` 不為空，代表目前有手動鎖定模式
+   - 這時不再走一般 `Intent Classifier`
+   - 會改由 `Override Router` 直接把回合送往被鎖定的模式
+
+7. `Follow-up Output Classifier`
    - 判斷 follow-up 回覆屬於：
      - `followup_ask_more`
      - `followup_answer_now`
    - 若仍要補問，保留 `pending_question`
    - 若可收斂，清空補問狀態
 
-6. `Intent Classifier`
-   - 只有在「不是高風險，且不在待補問狀態」時才會走到這裡
+8. `Intent Classifier`
+   - 只有在「不是高風險、不是模式指令、不在待補問狀態、沒有手動 override」時才會走到這裡
    - 依這輪輸入分到：
      - `mode_1_void`
      - `mode_2_soulmate`
@@ -394,14 +429,15 @@ AI Companion 的定位不是一般聊天機器人，而是：
      - `mode_5_natural`
      - `mode_6_clarify`
 
-7. `Set Active Mode`
+9. `Set Active Mode`
    - 每個 mode 會先把 `active_mode` 寫進 conversation state
    - 然後才進各自的 LLM / retrieval 路徑
 
 這個切換機制的產品含義是：
+- 模式指令優先於一般自動分類
 - 高風險永遠優先
 - 補問中的對話優先於重新分類
-- 一般 mode 分流只處理「非高風險、非 follow-up 鏈」的輸入
+- 一般 mode 分流只處理「非模式指令、非高風險、非 follow-up 鏈、沒有手動 override」的輸入
 - `mission` 與 `option` 可用 retrieval
 - `natural` 刻意不接 retrieval，避免陪伴感被檢索感破壞
 - `option / natural / clarify / follow-up` 雖然互動較自然，但仍可把量表線索寫進 `hamd_progress_state`
